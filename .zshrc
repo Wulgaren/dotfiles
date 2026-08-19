@@ -177,6 +177,8 @@ fzv() {
     ! -path "*/dist/*" \
     ! -path "*/build/*" \
     ! -path "*/.cache/*" \
+    ! -path "*/obj/*" \
+    ! -path "*/bin/*" \
     | fzf) && vim "$file"
 }
 
@@ -189,6 +191,8 @@ fzve() {
     ! -path "*/dist/*" \
     ! -path "*/build/*" \
     ! -path "*/.cache/*" \
+    ! -path "*/obj/*" \
+    ! -path "*/bin/*" \
     | fzf) && vim "$file"
 }
 
