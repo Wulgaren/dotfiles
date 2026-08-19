@@ -11,9 +11,13 @@ Interview the user relentlessly until you reach a shared understanding. Map this
 
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled — the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
 
-Each question should be formatted like so (plain markdown in the reply — **never** wrap questions in fenced code blocks; markdown inside fences is not rendered):
+### Presenting questions
 
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+**Prefer the `AskQuestion` tool** (the harness's built-in questionnaire) whenever questions have discrete options. Put your recommended answer as the first option with "(Recommended)" appended. Group all frontier questions into a single `AskQuestion` call when possible.
+
+**Fall back to plain markdown** only for open-ended questions that can't be expressed as multiple-choice:
+
+❓ **Q1** - **<question title>**: <question body>
 
 ➡️ <your recommended answer>
 
