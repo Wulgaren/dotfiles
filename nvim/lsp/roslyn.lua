@@ -1,7 +1,7 @@
 --- C# via native vim.lsp.config + Mason `roslyn` (Crashdummyy registry).
 ---@type vim.lsp.Config
 local fs = vim.fs
-local dotnet_root = require('dotnet_root')
+local dotnet_root = require('core.dotnet_root')
 
 local function mason_roslyn_cmd()
   local package_dir = fs.joinpath(vim.fn.stdpath('data'), 'mason', 'packages', 'roslyn', 'libexec')

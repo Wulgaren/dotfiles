@@ -13,21 +13,49 @@ vim.keymap.set('n', 'Q', '<Nop>', { desc = 'Disable Ex mode (Q)' })
 
 vim.keymap.set('n', '<leader>sr', ':%s///g<Left><Left><Left>', { desc = 'Find and replace in buffer' })
 vim.keymap.set('x', '<leader>sr', ':s///g<Left><Left><Left>', { desc = 'Find and replace in selection' })
+vim.keymap.set('x', '<leader>p', [["_dP]], { desc = 'Paste without yanking replaced text' })
+vim.keymap.set({ "n", "v" }, "<leader>d", "\"_d", { desc = 'Delete without yanking replaced text' })
+vim.keymap.set('n', ']<space>', 'mzo<esc>`z', { silent = true, desc = "Insert new line after cursor" })
+vim.keymap.set('n', '[<space>', 'mzO<esc>`z', { silent = true, desc = "Insert new line before cursor" })
+
+local function write_or_prompt_and_quit()
+  -- Mirror Vim's ZZ flow, but handle unnamed buffers by prompting for filename.
+  if vim.fn.expand('%') == '' then
+    local name = vim.fn.input('Save as: ', '', 'file')
+    if name == '' then
+      return
+    end
+    vim.cmd('write ' .. vim.fn.fnameescape(name))
+  else
+    vim.cmd('write')
+  end
+  -- Plain :quit errors (E37) if another buffer is still modified; confirm gives prompt.
+  vim.cmd('confirm quit')
+end
+
+vim.api.nvim_create_user_command('WQ', write_or_prompt_and_quit, {})
+vim.keymap.set('n', 'ZZ', write_or_prompt_and_quit, { silent = true })
 vim.keymap.set('n', 'ZX', '<cmd>qa!<CR>', {
   silent = true,
   desc = 'Quit all windows/tabs, discard unsaved buffers (:qa!)',
 })
 
+-- Centering cursor
 vim.keymap.set('n', '<C-u>', '<C-u>zz', { silent = true })
 vim.keymap.set('n', '<C-d>', '<C-d>zz', { silent = true })
 vim.keymap.set('n', '<C-f>', '<C-f>zz', { silent = true })
 vim.keymap.set('n', '<C-b>', '<C-b>zz', { silent = true })
 
-vim.keymap.set('n', 'n', 'nzzzv')
-vim.keymap.set('n', 'N', 'Nzzzv')
+vim.keymap.set("n", "n", "nzzzv")
+vim.keymap.set("n", "N", "Nzzzv")
 
-vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
-vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
+-- Move lines quickly
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+
+-- Open file explorer
+vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
+vim.keymap.set("n", "<leader>e", vim.cmd.Ex)
 
 vim.api.nvim_create_user_command('MyTips', function()
   local path = vim.fs.joinpath(vim.fn.stdpath('config'), 'nvim_tips.md')
@@ -41,6 +69,8 @@ end, { desc = 'Open nvim_tips.md below current window' })
 -- Git (vim-fugitive)
 vim.keymap.set('n', '<leader>gs', '<cmd>Git<CR>', { silent = true, desc = 'Git status (Fugitive)' })
 
+--- Vertical diff: if only staged (no unstaged) → :Gvdiffsplit HEAD; if both → pick
+--- HEAD vs all, or index vs working tree; if only unstaged → :Gvdiffsplit (default).
 local function fugitive_smart_vdiff()
   if vim.fn.FugitiveGitDir() == '' then
     vim.notify('Fugitive: not in a Git repository buffer', vim.log.levels.WARN)
@@ -96,7 +126,12 @@ vim.keymap.set('n', '<leader>gL', function()
   vim.cmd(('Git log -L %d,%d:%%'):format(line, line))
 end, { silent = true, desc = 'Git log current line (Fugitive)' })
 
-vim.keymap.set('n', '=ap', "ma=ap'a")
+-- reindent paragraph without losing spot
+vim.keymap.set("n", "=ap", "ma=ap'a")
+
+vim.keymap.set('n', '<leader>dd', function()
+  vim.diagnostic.open_float({ scope = 'line', focus = false })
+end, { silent = true, desc = 'Diagnostic details (float, keep focus)' })
 
 local function close_terminal_window(buf)
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
