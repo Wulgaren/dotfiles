@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Creates distinctive, production-grade frontend interfaces with high design quality. Use when building web components, pages, applications, or styling any web UI (websites, landing pages, dashboards, React components, HTML/CSS layouts). Produces creative, polished code that avoids generic AI aesthetics.
+description: Creates distinctive, production-grade frontend interfaces with high design quality. Must always apply when building web components, pages, applications, or styling any web UI (websites, landing pages, dashboards, React components, HTML/CSS layouts). Produces creative, polished code that avoids generic AI aesthetics.
 ---
 
 # Frontend Design
