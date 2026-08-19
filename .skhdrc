@@ -1,0 +1,74 @@
+alt - b : open -a Safari
+alt - 1 : open -a Safari
+fn - s : open -a Safari
+fn - 1 : open -a Safari
+ctrl - 1 : open -a Safari
+
+alt - d : open -a "Discord"
+alt - 3 : open -a "Discord"
+fn - d : open -a "Discord"
+fn - 3 : open -a "Discord"
+ctrl - 3 : open -a "Discord"
+
+# fn - t : open -a Ghostty
+# alt - t : open -a Ghostty
+# alt - return : open -a Ghostty
+# alt - 2 : open -a Ghostty
+
+# fn - t : open -a Terminal
+alt - t : open -a Terminal
+alt - return : osascript \
+    -e 'tell application "Terminal"' \
+    -e 'if (count of windows) is 0 then do script ""' \
+    -e 'activate' \
+    -e 'end tell'
+alt - 2 : osascript \
+    -e 'tell application "Terminal"' \
+    -e 'if (count of windows) is 0 then do script ""' \
+    -e 'activate' \
+    -e 'end tell'
+fn - t : osascript \
+    -e 'tell application "Terminal"' \
+    -e 'if (count of windows) is 0 then do script ""' \
+    -e 'activate' \
+    -e 'end tell'
+fn - 2 : osascript \
+    -e 'tell application "Terminal"' \
+    -e 'if (count of windows) is 0 then do script ""' \
+    -e 'activate' \
+    -e 'end tell'
+ctrl - 2 : osascript \
+    -e 'tell application "Terminal"' \
+    -e 'if (count of windows) is 0 then do script ""' \
+    -e 'activate' \
+    -e 'end tell'
+
+alt - m : open -a Music
+alt - 4 : open -a Music
+fn - 4 : open -a Music
+fn - m : open -a Music
+ctrl - 4 : open -a Music
+
+alt - f : open -a Finder
+alt - 5 : open -a Finder
+fn - 5 : open -a Finder
+fn - f : open -a Finder
+ctrl - 5 : open -a Finder
+
+alt - g : open -a Notes
+fn - g : open -a Notes
+
+alt - r : open -a Reminders
+fn - r : open -a Reminders
+
+alt - p : open -a Photos
+alt - 6 : open -a Photos
+fn - p : open -a Photos
+fn - 6 : open -a Photos
+ctrl - 6 : open -a Photos
+
+home | play
+delete | mute
+pageup | sound_up
+pagedown | sound_down
+cmd - escape : osascript -e 'tell application "System Events" to keystroke "`" using command down'

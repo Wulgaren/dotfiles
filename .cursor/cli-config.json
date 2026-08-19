@@ -1,0 +1,120 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(ls)",
+      "Shell(nvim)",
+      "Shell(echo)",
+      "Shell(cd)",
+      "Shell(git show)",
+      "Shell(git diff)",
+      "Shell(tail)",
+      "Shell(head)",
+      "Shell(wc)",
+      "Shell(find)",
+      "Shell(git log)",
+      "Shell(git status)",
+      "Shell(git rev-parse)",
+      "Shell(du)",
+      "Shell(git -C)",
+      "Shell(rg)",
+      "Shell(sed)",
+      "Shell(cat)",
+      "Shell(diff)",
+      "Shell(npx tsc)",
+      "Shell(strings)",
+      "Shell(npm run check)",
+      "Shell(npm run typecheck)",
+      "Shell(az rest --method get)"
+    ],
+    "deny": []
+  },
+  "version": 1,
+  "editor": {
+    "vimMode": true
+  },
+  "display": {
+    "showLineNumbers": false,
+    "showThinkingBlocks": false,
+    "showStatusIndicators": false,
+    "showStatusLineRunningTime": false
+  },
+  "notifications": true,
+  "hints": true,
+  "rewind": false,
+  "suggestNextPrompt": false,
+  "installedChannel": "prod",
+  "model": {
+    "modelId": "default",
+    "displayModelId": "auto",
+    "displayName": "Auto",
+    "displayNameShort": "Auto",
+    "aliases": [
+      "auto"
+    ],
+    "maxMode": false
+  },
+  "hasChangedDefaultModel": true,
+  "maxMode": false,
+  "modelParameters": {
+    "composer-2.5": [
+      {
+        "id": "fast",
+        "value": "true"
+      }
+    ],
+    "default": [],
+    "claude-fable-5": [
+      {
+        "id": "thinking",
+        "value": "true"
+      },
+      {
+        "id": "context",
+        "value": "300k"
+      },
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "selectedModel": {
+    "modelId": "default",
+    "parameters": []
+  },
+  "privacyCache": {
+    "ghostMode": true,
+    "privacyMode": 2,
+    "updatedAt": 1782727068351
+  },
+  "serverConfigCache": {
+    "backendUrl": "https://api2.cursor.sh",
+    "authCacheKey": "auth:auth0|user_01JZ87HDFTRMMPBWMQ9AVPBHZM",
+    "agentUrlConfig": {
+      "agentUrl": "https://agentn.global.api5.cursor.sh",
+      "agentnUrl": "https://agentn.global.api5.cursor.sh"
+    },
+    "cliSandboxDefaultEnabled": false,
+    "serverHttp2Config": 0,
+    "updatedAt": 1782727067853
+  },
+  "authInfo": {
+    "email": "natan.wojtyla@docusoft.pl",
+    "displayName": "Natan W",
+    "userId": 235047878,
+    "authId": "auth0|user_01JZ87HDFTRMMPBWMQ9AVPBHZM"
+  },
+  "network": {
+    "useHttp1ForAgent": false
+  },
+  "approvalMode": "allowlist",
+  "sandbox": {
+    "mode": "disabled",
+    "networkAccess": "user_config_with_defaults"
+  },
+  "runEverythingSettingsPromptStreak": 0,
+  "attribution": {
+    "attributeCommitsToAgent": true,
+    "attributePRsToAgent": true
+  }
+}

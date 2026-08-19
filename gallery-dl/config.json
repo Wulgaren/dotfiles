@@ -1,0 +1,27 @@
+{
+    "extractor": {
+        "cookies": ["safari"],
+        "base-directory": "~/Downloads",
+        "directory": [],
+        "skip": "true",
+        "filename": "{user[name]|user|username|pinner[username]}_{filename|media_id|id}.{extension}",
+        "tiktok": {
+            "filename": "{user}_{id}.{extension}"
+        },
+        "twitter": {
+            "cards": "ytdl"
+        },
+        "ytdl": {
+            "enabled": true,
+            "module": "yt_dlp",
+            "config-file": "~/.config/yt-dlp/gallery-dl.conf",
+            "filename": "{uploader|channel|creator}_{title|id}.{extension}"
+        }
+    },
+    "downloader": {
+        "ytdl": {
+            "module": "yt_dlp",
+            "config-file": "~/.config/yt-dlp/gallery-dl.conf"
+        }
+    }
+}

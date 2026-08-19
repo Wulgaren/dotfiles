@@ -1,0 +1,54 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+# Vim
+*.swp
+*.swo
+*.swn
+.Session.vim
+.vimrc.local
+
+# VS Code (local state only)
+.vscode/*
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+*.iml
+*.log
+*.bak
+*.old
+*.orig
+*.rej
+# Core dump files (not directories named "core")
+core.*
+# Generic caches
+.cache/
+.tmp/
+
+# Node (ONLY if you never want node_modules tracked anywhere)
+node_modules/
+# Docker
+.docker/
+docker-compose.override.yml
+
+# direnv
+.direnv/
+.envrc
+
+build/
+
+# vendored theme (clone via symlinks.md)
+qutebrowser/catppuccin/
+__pycache__/

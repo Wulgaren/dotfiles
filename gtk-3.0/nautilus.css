@@ -1,0 +1,23 @@
+/* GTK3 fallback (Nautilus 50 is GTK4; this covers older dialogs). */
+.nautilus-window,
+.nautilus-window.background {
+  background-color: alpha(@window_bg_color, 0.50);
+}
+
+.nautilus-window .sidebar,
+.nautilus-window placessidebar,
+.nautilus-window .navigation-sidebar {
+  background-color: alpha(@sidebar_bg_color, 0.70);
+}
+
+.nautilus-window headerbar {
+  background-color: alpha(@headerbar_bg_color, 0.55);
+  background-image: none;
+}
+
+.nautilus-window .view,
+.nautilus-window .content-view,
+.nautilus-window notebook,
+.nautilus-window notebook > stack {
+  background-color: transparent;
+}

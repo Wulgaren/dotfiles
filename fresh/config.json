@@ -1,0 +1,12 @@
+{
+  "theme": "terminal",
+  "editor": {
+    "use_terminal_bg": true
+  },
+  "file_explorer": {
+    "show_hidden": true
+  },
+  "file_browser": {
+    "show_hidden": true
+  }
+}

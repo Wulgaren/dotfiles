@@ -1,0 +1,21 @@
+{
+  "custom/distro": {
+    "format": "\uf30e",
+    "tooltip": false
+  },
+  "custom/terminal": {
+    "format": "󰆍",
+    "on-click": "foot",
+    "tooltip": false
+  },
+  "custom/browser": {
+    "format": "󰈙",
+    "on-click": "qutebrowser",
+    "tooltip": false
+  },
+  "custom/files": {
+    "format": "",
+    "on-click": "thunar",
+    "tooltip": false
+  }
+}

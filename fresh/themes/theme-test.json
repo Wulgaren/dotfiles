@@ -1,0 +1,78 @@
+━━━ Theme Editor: dracula ━━━
+New theme (not yet saved)
+up/down/TAB/S-TAB: navigate | RET/SPC: edit field or toggle section
+C-o: open | C-s: save | C-S-s: save as | C-d: delete | C-q: quit | F1: help
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▼ Editor
+  // Main editor area colors
+
+      // Editor background color
+    Background: X  #282A36
+
+      // Background of the line containing cursor
+    Current Line Background: X  #323442
+
+      // Cursor color
+    Cursor: X  #FF79C6
+
+      // Diff added line background
+    Diff Added Background: X  #808080
+
+      // Diff modified line background
+    Diff Modified Background: X  #808080
+
+      // Diff removed line background
+    Diff Removed Background: X  #808080
+
+      // Default text color
+    Foreground: X  #F8F8F2
+
+      // Cursor color in unfocused splits
+    Inactive Cursor: X  #808080
+
+      // Line number gutter background
+    Line Number Background: X  #282A36
+
+      // Line number text color
+    Line Number Foreground: X  #6272A4
+
+      // Selected text background
+    Selection Background: X  #44475A
+
+> UI Elements
+  // User interface colors (tabs, menus, status bar, etc.)
+
+> Search
+  // Search result highlighting colors
+
+> Diagnostics
+  // LSP diagnostic colors (errors, warnings, etc.)
+
+▼ Syntax Highlighting
+  // Code syntax highlighting colors
+
+      // Code comments
+    Comment: X  #6272A4
+
+      // Constants and literals
+    Constant: X  #BD93F9
+
+      // Function names
+    Function: X  #50FA7B
+
+      // Language keywords (if, for, fn, etc.)
+    Keyword: X  #FF79C6
+
+      // Operators (+, -, =, etc.)
+    Operator: X  #FF79C6
+
+      // String literals
+    String: X  #F1FA8C
+
+      // Type names
+    Type: X  #8BE9FD
+
+      // Variable names
+    Variable: X  #F8F8F2
+
