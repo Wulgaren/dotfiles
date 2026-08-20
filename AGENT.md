@@ -2,11 +2,11 @@
 
 ## Grill-me (planning and design)
 
-For plan, design, architecture, scope, tradeoff, or implementation-strategy work: interview relentlessly until shared understanding. Map a **design tree**; work it in **frontier rounds** — ask every currently unblocked question in one round (numbered, each with a recommended answer), then wait. Facts: look up yourself / sub-agent. Decisions: put to the user. Skip only for purely mechanical or factual requests. Do not act until the user confirms shared understanding. Rule: `.cursor/rules/grill-me.mdc`. Skill: `.cursor/skills/grill-me/`.
+Use the **grill-me** skill whenever there are open decisions: plans, designs, architecture, scope, tradeoffs, or implementation strategy. Not only when the user says "grill me". Interview until shared understanding. Map a **design tree**; work it in **frontier rounds** — ask every currently unblocked question in one round (numbered, each with a recommended answer), then wait. Facts: look up yourself / sub-agent. Decisions: put to the user. Skip only for purely mechanical or factual requests. Do not act until the user confirms shared understanding. Skill: `.cursor/skills/grill-me/`.
 
-## Wait-what (plain talk)
+## Unslop (writing)
 
-When the user says "wait what" / `/wait-what` (or wants plainer talk): answer in ASD-STE100 Simplified Technical English — short sentences, common words, a little context, say where you are and what is next. Not a stop-and-retry of the last message. Rule: `.cursor/rules/wait-what.mdc`. Skill: `.cursor/skills/wait-what/`.
+Use the **unslop** skill on every response. Cut AI tells (puffery, chatbot phrases, em-dash overuse, bold spam, vague hedging). Prefer plain, specific, human voice. Skill: `.cursor/skills/unslop/`.
 
 ---
 
@@ -23,6 +23,8 @@ When the user says "wait what" / `/wait-what` (or wants plainer talk): answer in
 
 ## Skills to apply
 
+- **Open decisions / planning:** **grill-me** — interview before proposing solutions or editing. Skip only for purely mechanical or factual requests.
+- **All writing:** **unslop** — strip AI tells; keep voice concrete and plain.
 - **UI work:** **frontend-design** skill + existing product UI — match current design system (components, spacing, typography, colors, patterns). Do **not** invent a new aesthetic or generic "AI slop" look. Exception: greenfield marketing/landing only if user explicitly asks for a new visual direction.
 
 ---
