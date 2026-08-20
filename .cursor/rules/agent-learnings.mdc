@@ -1,14 +1,11 @@
 ---
-description: Use agent learnings when approaching difficult problems
+description: >
+  Learnings: when facing a difficult or ambiguous problem, check AGENT.md
+  Agent learnings and apply the matching Struggle / Resolution.
 alwaysApply: true
 ---
 
 # Agent learnings
 
-When facing a difficult or ambiguous problem:
-
-1. **Check AGENT.md** — In this workspace: `AGENT.md` at the project root. If you use a global copy, it may be at `~/AGENT.md`. It lists recurring struggles (search strategy, failed edits, large files, parallel vs sequential tools, linting, multi-step tasks, paths, reading the right context) and how they were resolved.
-
-2. **Apply the patterns** — Use the resolutions there to choose tools, structure edits, and recover from failures (e.g. unique `old_string`, targeted reads, todo list for complex work).
-
-3. **Update AGENT.md** — When you hit a new kind of difficulty and find a fix that works, add a short "Struggle / Resolution" entry so future sessions can reuse it.
+1. **Check AGENT.md.** Project root `AGENT.md` (global copy: `~/AGENT.md`). Open **Agent learnings**. Apply the matching Struggle / Resolution.
+2. **Update AGENT.md.** When you hit a new kind of difficulty and find a fix that works, add a short Struggle / Resolution entry.

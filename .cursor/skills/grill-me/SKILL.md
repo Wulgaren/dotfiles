@@ -13,13 +13,7 @@ Work the tree in **rounds**. The **frontier** is every decision whose prerequisi
 
 ### Presenting questions
 
-**Prefer the `AskQuestion` tool** (the harness's built-in questionnaire) whenever questions have discrete options. Put your recommended answer as the first option with "(Recommended)" appended. Group all frontier questions into a single `AskQuestion` call when possible.
-
-**Fall back to plain markdown** only for open-ended questions that can't be expressed as multiple-choice:
-
-❓ **Q1** - **<question title>**: <question body>
-
-➡️ <your recommended answer>
+**Prefer the `AskQuestion` tool** (the harness's built-in questionnaire) whenever questions have discrete options. Put your recommended answer as the first option with "(Recommended)" appended. Group all frontier questions into a single `AskQuestion` call when possible (multiple pages).
 
 Each round the user answers reshapes the tree — settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 

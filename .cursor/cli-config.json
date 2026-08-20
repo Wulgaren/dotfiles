@@ -24,6 +24,9 @@
       "Shell(strings)",
       "Shell(npm run check)",
       "Shell(npm run typecheck)",
+      "Shell(npm test)",
+      "Shell(true)",
+      "Shell(readlink)",
       "Shell(az rest --method get)"
     ],
     "deny": []
