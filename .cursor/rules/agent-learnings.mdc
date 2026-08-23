@@ -8,4 +8,5 @@ alwaysApply: true
 # Agent learnings
 
 1. **Check AGENT.md.** Project root `AGENT.md` (global copy: `~/AGENT.md`). Open **Agent learnings**. Apply the matching Struggle / Resolution.
-2. **Update AGENT.md.** When you hit a new kind of difficulty and find a fix that works, add a short Struggle / Resolution entry.
+2. **Update only when it transfers.** After a hard problem, add a short Struggle / Resolution only if the next agent in an *unrelated* repo would reuse it (tooling, search, edit, lint, paths, ambiguity). Write that entry in the **global** `~/AGENT.md` / `.dotfiles/AGENT.md` learnings list.
+3. **Project gotchas stay local.** API quirks, UI framework traps, extractor edge cases, and one-app bug fixes belong in that project's own `AGENT.md` (or nowhere). Leave them out of the global learnings list.

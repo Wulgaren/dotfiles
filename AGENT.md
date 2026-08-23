@@ -58,7 +58,7 @@ When adding `fetch`, other network calls, file/I/O, or parsing that can fail, ev
 
 # Agent learnings: struggles and resolutions
 
-Notes on what tends to go wrong and how to fix it, for reuse when tackling difficult problems.
+Workflow and tooling notes that transfer across projects (search, edits, lint, paths, ambiguity). Project-specific bug fixes and API/UI quirks go in that project's `AGENT.md`, not here.
 
 ---
 
@@ -145,4 +145,4 @@ Notes on what tends to go wrong and how to fix it, for reuse when tackling diffi
 
 ---
 
-*Update this file when you hit a new kind of difficulty and find a resolution that works.*
+*Add an entry here only when the struggle and fix would help in an unrelated repo. Otherwise use the project's own AGENT.md, or skip.*
