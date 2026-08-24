@@ -2,18 +2,29 @@
 
 ## Workflow
 
-1. **Clarify spaghetti before changing it.** If the area is tangled, has unclear ownership, or shows multiple conflicting patterns, ask how to treat it (minimal surgical fix vs small cleanup vs larger refactor). Done when the user has chosen, or the area is not spaghetti.
-2. **Investigate before editing.** Search and read existing helpers, components, hooks, and patterns in-repo. Prefer reuse or extension over new code.
-   - Before adding a helper (string normalize, format, parse, URL, toast wrapper, etc.): grep the repo for an existing function with the same job. Check shared utils / lib folders first.
-   - If one exists: import and reuse it. Leave the body where it lives.
-   - If tests fail because a mock lacks an export: add the export to the test mock. Leave the real helper alone.
-   Done when you have reused an existing piece or confirmed none exists for the job.
-3. **Verify build after TS/React/CSS work.** Run the project's build or typecheck before claiming done. Fix failures you introduced. If the build is already red from unrelated files, say so and either fix them if cheap or ask before expanding scope. Done when the check passes, or you have reported pre-existing red and settled scope with the user.
+1. **Name the _target_.** Point at the existing widget, command, or code path you will change, and the _blast radius_ (what you may touch). If either is unclear, ask. Several decisions hanging off it: use grill-me. Spaghetti (tangled ownership, conflicting patterns): ask surgical vs cleanup vs refactor before editing. Stay inside the named radius. Done when the target and radius are named, or the user has answered.
+
+2. **Investigate before editing.** Search and read existing helpers, components, hooks, and patterns. Reuse or extend them.
+   - Before adding a helper: grep for one with the same job. Shared utils / lib first.
+   - If one exists: import it. Leave the body where it lives.
+   - If tests fail because a mock lacks an export: add the export to the mock. Leave the real helper alone.
+   Done when you have reused an existing piece or confirmed none exists.
+
+3. **_One path_.** Change the existing path. Remove the old helper, backdrop, global, or branch in the same change. Done when there is a single way to do the thing.
+
+4. **_Instrument_ when the cause is unknown.** Add a log or probe, reproduce, read the output, then fix. Revert a speculative rewrite before the next guess. Done when the failing signal is visible, or the fix is the observed cause.
+
+5. **Smallest diff.** Fix the root cause with the least new code. Extend an existing pattern before adding an abstraction. Done when nothing in the diff is optional for the target.
+
+6. **_Exercise_ the path, then check.** Click or run the actual user flow (the widget, the command, the URL). Typecheck is not that step. Then run that repo's usual check (typecheck, lint, test, hooks). Fix what you introduced. If the check was already red from unrelated files, say so and settle scope before expanding. Done when the flow works and the check passes, or you have reported pre-existing red and settled scope.
 
 ## Preferences
 
-- **Least code.** Smallest diff that fixes the root cause. Extend existing patterns before adding abstractions.
 - **Readable > clever.** Flat functions, explicit names, one obvious path.
+- **Questions are read-only.** When the user asks what, why, or how something works, investigate and answer. Edit only when they ask for a change.
+- **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
+- **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked.
+- **YAGNI.** Prefer the smallest model that makes the correct behavior unsurprising. When tempted to add abstractions, layers, or speculative machinery, follow the laziness and subtract-before-you-add skills.
 
 ## TypeScript: no `any`
 
@@ -58,90 +69,19 @@ When adding `fetch`, other network calls, file/I/O, or parsing that can fail, ev
 
 # Agent learnings: struggles and resolutions
 
-Workflow and tooling notes that transfer across projects (search, edits, lint, paths, ambiguity). Project-specific bug fixes and API/UI quirks go in that project's `AGENT.md`, not here.
+Workflow and tooling notes that transfer across projects. Project-specific bug fixes and API/UI quirks go in that project's `AGENT.md`, not here.
 
 ---
 
-## 1. Search strategy
+## 1. First-class tools vs MCP / dynamic tools
 
-**Struggle:** Wasting time with the wrong tool or too broad a search.
-
-**Resolution:**
-- **Exact symbols/strings** → use `Grep` (e.g. function name, env var, string literal).
-- **Meaning / "how does X work?"** → use `SemanticSearch` with a clear question and, if known, a target directory.
-- **File by name** → use `Glob`; **directory layout** → use `LS`.
-- Start with one focused search; narrow by directory or file if the codebase is large.
-
----
-
-## 2. Failed search_replace (old_string not unique)
-
-**Struggle:** Edit fails because `old_string` matches in several places or the match is ambiguous.
+**Struggle:** A skill names a first-class tool (`AskQuestion`, `Read`, `Grep`) and the agent hunts for it with `GetDynamicTools` / `CallDynamicTool` (often namespace `cursor`), then fails because the tool is already in the available tools list.
 
 **Resolution:**
-- Include more **context** (3–5 lines before and after) so the match is unique.
-- For **renames or repeated tokens**, use `replace_all: true` only when every occurrence should change.
-- Re-read the file around the target line to get exact whitespace and content.
-
----
-
-## 3. Large files
-
-**Struggle:** Reading a huge file is slow and noisy; easy to miss the right spot.
-
-**Resolution:**
-- Use `SemanticSearch` or `Grep` in that file to find the relevant section, then `Read` with `offset` and `limit`.
-- Prefer editing a small, unique span of lines rather than the whole file.
-
----
-
-## 4. Parallel vs sequential tool use
-
-**Struggle:** Doing independent work one step at a time slows things down.
-
-**Resolution:**
-- Call **independent** tools in parallel (e.g. multiple `Read` or `Grep` that don't depend on each other).
-- Use **sequential** calls when one result informs the next (e.g. search → then read the found file).
-
----
-
-## 5. Linting and errors after edits
-
-**Struggle:** Introducing regressions or lint errors that aren't obvious.
-
-**Resolution:**
-- After editing a file, run `ReadLints` on that file (or the edited directory).
-- Fix any new errors before moving on; don't assume the edit was safe.
-
----
-
-## 6. Multi-step and ambiguous tasks
-
-**Struggle:** Forgetting steps, or solving the wrong thing when the request is vague.
-
-**Resolution:**
-- For **multi-step or complex work**, use a todo list: break into concrete steps and tick them off.
-- If the request is ambiguous (e.g. "fix it", "make it better"), **infer from context** (open files, recent edits, errors). If still unclear, ask one short, specific question rather than several.
-
----
-
-## 7. Paths and runlists
-
-**Struggle:** Commands or reads failing due to wrong path or environment.
-
-**Resolution:**
-- Prefer **absolute paths** when the user or workspace root is known (e.g. `/Users/natios/...` or workspace path).
-- For **run scripts / dev servers**: use the project's package manager and scripts (e.g. `bun run dev`); check `package.json` or project rules for the right commands.
-
----
-
-## 8. Reading the right thing
-
-**Struggle:** Editing or reasoning from an outdated or wrong part of the file.
-
-**Resolution:**
-- After a prior read, if the file might have changed or the relevant section wasn't in the snippet, **re-read** the exact range before editing.
-- Use **citations** with line numbers (e.g. `12:15:path/to/file`) so the referenced region is clear.
+- Invoke first-class tools directly, same as `Read`.
+- Use `GetDynamicTools` / `CallDynamicTool` only for tools that are *not* already listed as available.
+- The `cursor` dynamic namespace is extra tools (`CreateGoal`, `GenerateImage`, `UpdateGoal`), not the main tool list.
+- When writing a skill, say "call X the same way you call Read" rather than "harness built-in" or "MCP".
 
 ---
 
