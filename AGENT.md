@@ -1,5 +1,7 @@
 # Agent policy
 
+I focus on building complex things as simple as possible. I love to find ways to reduce complexity when solving problems.
+
 ## Workflow
 
 1. **Name the _target_.** Point at the existing widget, command, or code path you will change, and the _blast radius_ (what you may touch). If either is unclear, ask. Several decisions hanging off it: use grill-me. Spaghetti (tangled ownership, conflicting patterns): ask surgical vs cleanup vs refactor before editing. Stay inside the named radius. Done when the target and radius are named, or the user has answered.
