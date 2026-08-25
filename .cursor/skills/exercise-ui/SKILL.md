@@ -1,14 +1,16 @@
 ---
 name: exercise-ui
 description: >
-  Exercise a web UI in Playwright after changing it. Must always apply when
-  building, restyling, or checking a web UI. Open the running page, snapshot,
-  drive the flow just changed, screenshot, and fix what you see.
+  Exercise a web UI in Playwright after a big UI change (new screen,
+  layout, composition, redesign) or when the result is hard to trust without
+  seeing it (overflow, stacking, responsive breakpoints, motion, focus).
+  Open the running page, snapshot, drive the flow just changed, screenshot,
+  and fix what you see.
 ---
 
 # Exercise UI
 
-After any web UI change, _exercise_ the path in a real browser. The running page is the evidence. Drive it with Playwright browser tools.
+_Exercise_ the path in a real browser when the change is big enough that layout or composition could be wrong, or when correctness depends on pixels, stacking, overflow, breakpoints, or motion the source cannot prove. The running page is the evidence. Drive it with Playwright browser tools.
 
 Write a Playwright test file only when the user asks for one.
 
