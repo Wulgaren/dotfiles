@@ -1,7 +1,6 @@
-# Netlify: Prefer Edge Functions
-
-Must always apply when working with Netlify deployment, serverless functions, or edge functions. Triggers on Netlify config, `netlify.toml`, or choosing between edge vs serverless.
-
+---
+name: netlify-prefer-edge-functions
+description: "Must always apply when working with Netlify deployment, serverless functions, or edge functions. Triggers on Netlify config, `netlify.toml`, or choosing between edge vs serverless."
 ---
 
 When working with Netlify, prefer **Edge Functions** over Netlify serverless (Node) functions when both can satisfy the requirement.
