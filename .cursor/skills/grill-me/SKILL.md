@@ -17,6 +17,27 @@ Call `AskQuestion` the same way you call `Read`: it is already in the available 
 
 `AskQuestion` is a first-class tool. Invoke it directly. It is not in the `cursor` namespace and is not found via MCP or dynamic-tool discovery.
 
+Required payload — `title` alone is invalid; every question needs `id`, `prompt`, and `options` with `id` / `label`:
+
+```
+AskQuestion({
+  title: "Short topic",
+  questions: [
+    {
+      id: "primary",
+      prompt: "What should this control do?",
+      options: [
+        { id: "a", label: "Observable outcome A (Recommended)" },
+        { id: "b", label: "Observable outcome B" },
+        { id: "other", label: "Something else" }
+      ]
+    }
+  ]
+})
+```
+
+On error, fix the payload and call `AskQuestion` again in the same turn. Paste numbered options as chat text only when `AskQuestion` is missing from the available tools list after a correct call.
+
 Each round the user answers reshapes the tree — settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 
 Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it — don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report — ask the rest of the frontier now. The _decisions_ are the user's — put each to them and wait.

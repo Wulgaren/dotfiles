@@ -16,7 +16,7 @@ Write a Playwright test file only when the user asks for one.
 
 1. **Name the flow and the URL.** The flow is the user path you changed, not the whole app. The URL is this repo's running page for that path. Reuse a server already serving it; otherwise start the repo's existing dev command and wait until the URL loads. Done when you can name both, or you have reported there is no URL to open.
 
-2. **Open Playwright.** Discover browser tools with GetDynamicTools (pattern `playwright`). Use a namespace whose `namespaceStatus` is `ready`. Invoke with CallDynamicTool. Done when navigate works, or you have reported Playwright is unavailable and stopped.
+2. **Open Playwright.** Discover browser tools with GetDynamicTools (pattern `playwright`). Use a namespace whose `namespaceStatus` is `ready`. Invoke with CallDynamicTool. Drive the browser only through those MCP tools; browsers come from the global Playwright cache (`~/Library/Caches/ms-playwright` on macOS), not from this repo. Do not run `npx playwright install`, add Playwright packages, or download browsers inside the project. If navigate fails (Chrome missing, browser not found, or an install hint), stop and report that MCP needs a reload or `--browser chromium` against the global cache. Done when navigate works, or you have reported that blocker and stopped.
 
 3. **See the page.** Navigate to the URL. Snapshot (the tree you act on). Screenshot (what it looks like). Done when you have looked at the running page, not the source.
 
