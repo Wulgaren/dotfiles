@@ -26,6 +26,9 @@
 | `gi` | Insert in the last place you edited |
 | `:g/your_string/d` | delete strings with specific text (:g! - delete ones that don't include the string) |
 | `:w !sudo tee %` | write file with sudo privileges |
+| `C-z / fg` | suspend and go back to Vim |
+| `:dis / register + motion` | check your clipboard and use it |
+| `: then C-f` | editing command line with Vim keybinds |
 
 ## Change operators
 
