@@ -23,3 +23,19 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 	end,
 })
 
+-- % cycles <<<<<<< / ======= / >>>>>>> via matchit
+local conflict_words = "^<<<<<<<.*:^=======.*:^>>>>>>>.*"
+vim.api.nvim_create_autocmd("FileType", {
+	group = vim.api.nvim_create_augroup("conflict_match_words", { clear = true }),
+	callback = function()
+		local existing = vim.b.match_words
+		if existing and existing ~= "" then
+			if not existing:find(conflict_words, 1, true) then
+				vim.b.match_words = existing .. "," .. conflict_words
+			end
+		else
+			vim.b.match_words = conflict_words
+		end
+	end,
+})
+

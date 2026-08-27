@@ -196,14 +196,14 @@ Open with `<Leader>pv` or `<Leader>e`.
 
 Four buffers: **LOCAL**, **BASE**, **REMOTE**, **MERGED**. Work in **MERGED**.
 
-| Command | Meaning |
-|---------|---------|
-| `:diffg LO` | take hunk from LOCAL |
-| `:diffg RE` | take from REMOTE |
-| `:diffput MERGED` | from LOCAL/REMOTE/BASE → push into MERGED |
+From MERGED: `:diffg LO / :diffg RE` - pull a hunk in from LOCAL or REMOTE.
+From LOCAL / REMOTE / BASE: `:diffput MERGED` - push the hunk under the cursor out into MERGED.
+
+`:%diffg LO / :%diffg RE` - take every hunk from LOCAL or REMOTE.
 
 `[c / ]c` - to jump between changes.
-`search for <<<<<<<` - to jump between merge conflicts.
+`[x / ]x` - to jump between merge conflicts.
+
 Save **MERGED**, exit with `:qa`; abort with `:cq`.
 
 ### NeoCodeium (Windsurf ghost text)
