@@ -27,6 +27,7 @@
       "Shell(npm test)",
       "Shell(true)",
       "Shell(readlink)",
+      "Shell(stat)",
       "Shell(az rest --method get)"
     ],
     "deny": []

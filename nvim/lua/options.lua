@@ -12,6 +12,8 @@ vim.o.updatetime = 250
 vim.o.signcolumn = "yes"
 vim.opt.completeopt = { "menu", "menuone", "noselect", "popup" }
 vim.o.pumheight = 12
+vim.o.wildmode = "noselect:lastused,full"
+vim.opt.wildoptions:append("pum")
 vim.o.swapfile = false
 vim.o.backup = false
 vim.o.tabstop = 4
@@ -27,12 +29,23 @@ vim.o.autoread = true
 vim.o.laststatus = 3
 vim.o.cmdheight = 0
 
+local options_augroup = vim.api.nvim_create_augroup("config-options-autocmds", { clear = true })
+
 vim.api.nvim_create_autocmd("FileType", {
-	group = vim.api.nvim_create_augroup("config-options-autocmds", { clear = true }),
+	group = options_augroup,
 	pattern = "qf",
 	callback = function()
 		vim.opt_local.wrap = true
 		vim.opt_local.linebreak = true
+	end,
+})
+
+--- Auto-show wildmenu popup while typing in :, /, and ?
+vim.api.nvim_create_autocmd("CmdlineChanged", {
+	group = options_augroup,
+	pattern = { ":", "/", "?" },
+	callback = function()
+		vim.fn.wildtrigger()
 	end,
 })
 
