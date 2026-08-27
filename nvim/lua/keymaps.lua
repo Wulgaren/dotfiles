@@ -1,14 +1,6 @@
 vim.keymap.set('n', '<C-s>', '<cmd>write<CR>', { silent = true })
 vim.keymap.set('i', '<C-s>', '<Esc><cmd>write<CR>a', { silent = true })
 
---- Cmdline Up/Down always walk history; Tab cycles wildmenu matches.
-vim.keymap.set('c', '<Up>', function()
-  return vim.fn.wildmenumode() ~= 0 and '<C-E><Up>' or '<Up>'
-end, { expr = true })
-vim.keymap.set('c', '<Down>', function()
-  return vim.fn.wildmenumode() ~= 0 and '<C-E><Down>' or '<Down>'
-end, { expr = true })
-
 --------------------------------------------------------------------------------
 -- Insert only: Opt/Alt + Backspace — delete word before cursor (same as i_CTRL-W).
 -- Terminal must send Meta+Backspace / Meta+Del as chords (e.g. iTerm: Option → Esc+ or Meta).
