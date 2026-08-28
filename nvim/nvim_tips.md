@@ -104,6 +104,7 @@ Non-focused windows use dimmer **NormalNC** so active split stands out.
 
 | Key | Action |
 |-----|--------|
+| `s` | cut command |
 | `<C-s>` | write (Normal & Insert) |
 | `<Esc>` (Normal) | clear search highlight |
 | `Q` | disabled |

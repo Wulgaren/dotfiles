@@ -1,3 +1,38 @@
+-- Delete/change without yanking (black hole register)
+vim.keymap.set({ 'n', 'v' }, 'd', '"_d', { desc = 'Delete without yank' })
+vim.keymap.set('n', 'D', '"_D', { desc = 'Delete to EOL without yank' })
+vim.keymap.set('n', 'x', '"_x', { desc = 'Delete char without yank' })
+vim.keymap.set('n', 'X', '"_X', { desc = 'Delete char before without yank' })
+vim.keymap.set({ 'n', 'v' }, 'c', '"_c', { desc = 'Change without yank' })
+vim.keymap.set('n', 'C', '"_C', { desc = 'Change to EOL without yank' })
+
+-- Cut (delete to registers / clipboard) — what d used to do
+function _G.cut_operator(_mode)
+	vim.cmd("silent keepjumps normal! '[d']")
+end
+
+local function cut_line()
+	local count = vim.v.count > 0 and vim.v.count or ""
+	vim.cmd("normal! " .. count .. "dd")
+end
+
+-- Before single `s`: ss/sd cut a line (like dd; `s` alone starts the cut operator)
+vim.keymap.set("n", "ss", cut_line, { desc = "Cut line" })
+vim.keymap.set("n", "sd", cut_line, { desc = "Cut line" })
+
+vim.keymap.set("n", "S", function()
+	vim.cmd("normal! cc")
+end, { desc = "Cut line and insert" })
+
+vim.keymap.set("n", "s", function()
+	vim.go.operatorfunc = "v:lua.cut_operator"
+	return "g@"
+end, { expr = true, desc = "Cut operator" })
+
+vim.keymap.set('v', 's', function()
+	vim.cmd('normal! d')
+end, { desc = 'Cut selection' })
+
 vim.keymap.set('n', '<C-s>', '<cmd>write<CR>', { silent = true })
 vim.keymap.set('i', '<C-s>', '<Esc><cmd>write<CR>a', { silent = true })
 
