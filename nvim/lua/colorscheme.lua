@@ -19,8 +19,9 @@ local function apply_overrides()
 		EndOfBuffer = { fg = line_nr, bg = "NONE" },
 		LineNr = { fg = line_nr, bg = "NONE" },
 		CursorLine = { bg = "#3b3f52", bold = true },
-		FloatBorder = { fg = "#525669", bg = "NONE" },
-		PmenuBorder = { fg = "#525669", bg = "NONE" },
+
+		FloatBorder = { fg = "#6c7086", bg = "NONE" },
+		PmenuBorder = { fg = "#6c7086", bg = "NONE" },
 		WinSeparator = { fg = "#525669", bg = "NONE" },
 		Comment = { fg = "#737994", italic = true },
 		NonText = { fg = line_nr },
