@@ -1,12 +1,8 @@
 vim.keymap.set('n', '<C-s>', '<cmd>write<CR>', { silent = true })
 vim.keymap.set('i', '<C-s>', '<Esc><cmd>write<CR>a', { silent = true })
 
---------------------------------------------------------------------------------
 -- Insert only: Opt/Alt + Backspace — delete word before cursor (same as i_CTRL-W).
--- Terminal must send Meta+Backspace / Meta+Del as chords (e.g. iTerm: Option → Esc+ or Meta).
---------------------------------------------------------------------------------
 vim.keymap.set('i', '<M-BS>', '<C-W>', { silent = true })
-vim.keymap.set('i', '<M-Del>', '<C-W>', { silent = true })
 
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR><Esc>', { silent = true })
 vim.keymap.set('n', 'Q', '<Nop>', { desc = 'Disable Ex mode (Q)' })
@@ -18,13 +14,12 @@ vim.keymap.set('n', 'ZX', '<cmd>qa!<CR>', {
   desc = 'Quit all windows/tabs, discard unsaved buffers (:qa!)',
 })
 
-vim.keymap.set('n', '<C-u>', '<C-u>zz', { silent = true })
-vim.keymap.set('n', '<C-d>', '<C-d>zz', { silent = true })
-vim.keymap.set('n', '<C-f>', '<C-f>zz', { silent = true })
-vim.keymap.set('n', '<C-b>', '<C-b>zz', { silent = true })
-
-vim.keymap.set('n', 'n', 'nzzzv')
-vim.keymap.set('n', 'N', 'Nzzzv')
+for _, key in ipairs({ 'u', 'd', 'f', 'b' }) do
+  vim.keymap.set('n', '<C-' .. key .. '>', '<C-' .. key .. '>zz', { silent = true })
+end
+for _, key in ipairs({ 'n', 'N' }) do
+  vim.keymap.set('n', key, key .. 'zzzv')
+end
 
 vim.keymap.set('n', ']x', '/<<<<<<<CR>', { silent = true, desc = 'Next conflict marker' })
 vim.keymap.set('n', '[x', '?<<<<<<<CR>', { silent = true, desc = 'Previous conflict marker' })
@@ -43,61 +38,30 @@ end, { desc = 'Open nvim_tips.md below current window' })
 
 -- Git (vim-fugitive)
 vim.keymap.set('n', '<leader>gs', '<cmd>Git<CR>', { silent = true, desc = 'Git status (Fugitive)' })
-
-local function fugitive_smart_vdiff()
-  if vim.fn.FugitiveGitDir() == '' then
-    vim.notify('Fugitive: not in a Git repository buffer', vim.log.levels.WARN)
-    return
-  end
-  local wt = vim.fn.FugitiveWorkTree()
-  local relpath = vim.fn.FugitivePath(vim.fn.expand('%'), ':(top)')
-  if relpath == '' or wt == '' then
-    vim.notify('Fugitive: could not resolve file path in repo', vim.log.levels.WARN)
-    return
-  end
-  local function diff_dirty(cached)
-    local cmd = { 'git', '-C', wt, 'diff', '--quiet' }
-    if cached then
-      table.insert(cmd, '--cached')
+vim.keymap.set('n', '<leader>gd', '<cmd>Gvdiffsplit<CR>', { silent = true, desc = 'Git vertical diff (same as dv in :Git)' })
+vim.keymap.set('n', '<leader>gD', '<cmd>Gvdiffsplit HEAD<CR>', { silent = true, desc = 'Git vertical diff vs last commit' })
+vim.keymap.set('n', '<leader>gb', '<cmd>Git blame<CR>', { silent = true, desc = 'Git blame (Fugitive)' })
+local function git_line_range()
+  if vim.fn.visualmode() ~= '' then
+    local l1, l2 = vim.api.nvim_buf_get_mark(0, '<')[1], vim.api.nvim_buf_get_mark(0, '>')[1]
+    if l1 > l2 then
+      l1, l2 = l2, l1
     end
-    vim.list_extend(cmd, { '--', relpath })
-    vim.fn.system(cmd)
-    return vim.v.shell_error ~= 0
+    return l1, l2
   end
-  local has_unstaged = diff_dirty(false)
-  local has_staged = diff_dirty(true)
-  if has_unstaged and has_staged then
-    vim.ui.select({
-      { label = 'Working tree vs HEAD (all changes)', cmd = 'Gvdiffsplit HEAD' },
-      { label = 'Index vs working tree (staged vs unstaged)', cmd = 'Gvdiffsplit' },
-    }, {
-      prompt = 'Diff this file',
-      format_item = function(item)
-        return item.label
-      end,
-    }, function(item)
-      if item then
-        vim.cmd(item.cmd)
-      end
-    end)
-  elseif has_staged and not has_unstaged then
-    vim.cmd('Gvdiffsplit HEAD')
-  else
-    vim.cmd('Gvdiffsplit')
-  end
+  local line = vim.fn.line('.')
+  return line, line
 end
 
-vim.keymap.set('n', '<leader>gd', fugitive_smart_vdiff, { silent = true, desc = 'Git vertical diff (smart)' })
-vim.keymap.set('n', '<leader>gb', '<cmd>Git blame<CR>', { silent = true, desc = 'Git blame (Fugitive)' })
 vim.keymap.set('n', '<leader>gl', '<cmd>Git log -- %<CR>', { silent = true, desc = 'Git log current file (Fugitive)' })
-vim.keymap.set('n', '<leader>gB', function()
-  local line = vim.fn.line('.')
-  vim.cmd(('Git blame -L %d,%d -- %%'):format(line, line))
-end, { silent = true, desc = 'Git blame current line (Fugitive)' })
-vim.keymap.set('n', '<leader>gL', function()
-  local line = vim.fn.line('.')
-  vim.cmd(('Git log -L %d,%d:%%'):format(line, line))
-end, { silent = true, desc = 'Git log current line (Fugitive)' })
+vim.keymap.set({ 'n', 'x' }, '<leader>gB', function()
+  local l1, l2 = git_line_range()
+  vim.cmd(('Git blame -L %d,%d -- %%'):format(l1, l2))
+end, { silent = true, desc = 'Git blame line or visual selection (Fugitive)' })
+vim.keymap.set({ 'n', 'x' }, '<leader>gL', function()
+  local l1, l2 = git_line_range()
+  vim.cmd(('Git log -L %d,%d:%%'):format(l1, l2))
+end, { silent = true, desc = 'Git log line or visual selection (Fugitive)' })
 
 vim.keymap.set('n', '=ap', "ma=ap'a")
 

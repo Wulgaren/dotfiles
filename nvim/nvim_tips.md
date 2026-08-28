@@ -108,7 +108,7 @@ Non-focused windows use dimmer **NormalNC** so active split stands out.
 | `<Esc>` (Normal) | clear search highlight |
 | `Q` | disabled |
 | `<Leader>sr` | `:substitute` whole buffer / selection |
-| `<Leader>pv` / `<Leader>e` | netrw `Lexplore` — see **File explorer** below |
+| `<Leader>e` | netrw `Lexplore` — see **File explorer** below |
 | `<C-u>` / `<C-d>` / `<C-f>` / `<C-b>` | scroll, cursor centered |
 | `n` / `N` | next/prev match, cursor centered |
 | Visual `J` / `K` | move selection down/up |
@@ -129,7 +129,7 @@ Non-focused windows use dimmer **NormalNC** so active split stands out.
 
 ### File explorer (Netrw / `:Lexplore`)
 
-Open with `<Leader>pv` or `<Leader>e`.
+Open with `<Leader>e`.
 
 | Key | Action |
 |-----|--------|
@@ -146,9 +146,8 @@ Open with `<Leader>pv` or `<Leader>e`.
 | Key | Action |
 |-----|--------|
 | `<C-p>` | go to file |
-| `<C-t>` / `<Leader>fg` | find text in directory |
-| `<C-j>` / `<Leader>b` | list of buffers |
-| `<Leader>fs` | LSP document symbols |
+| `<C-t>` | find text in directory |
+| `<C-j>` | buffer list |
 
 ### LSP (server attached)
 
@@ -156,9 +155,10 @@ Open with `<Leader>pv` or `<Leader>e`.
 |-----|--------|
 | `gd` | definition |
 | `K` | hover docs |
-| `gr` | references |
-| `<Leader>rn` | rename |
-| `<Leader>ca` | code actions |
+| `grr` | references |
+| `grn` | rename |
+| `gra` | code actions |
+| `gO` | document symbols |
 | `<Leader>f` | format buffer / selection |
 | `<Leader>d` | buffer diagnostics |
 
@@ -169,11 +169,12 @@ Open with `<Leader>pv` or `<Leader>e`.
 | Key | Action |
 |-----|--------|
 | `<Leader>gs` | `:Git` status |
-| `<Leader>gd` | vertical git diff split |
+| `<Leader>gd` | vertical diff |
+| `<Leader>gD` | vertical diff vs last commit |
 | `<Leader>gb` | `Git blame` (file) |
-| `<Leader>gB` | blame current line |
+| `<Leader>gB` | blame line/s |
 | `<Leader>gl` | log current file |
-| `<Leader>gL` | log / history for current line |
+| `<Leader>gL` | log line/s |
 | `<Leader>gc` | git branch switching, unknown name creates |
 
 **In `:Git` status — staging**
@@ -186,7 +187,7 @@ Open with `<Leader>pv` or `<Leader>e`.
 | `U` | unstage all |
 | `X` | discard change under cursor |
 | `=` | toggle inline diff |
-| `dv` / `ds` | vertical / horizontal diff vs index |
+| `dv` | vertical diff - staged / last commit |
 | `cc` | commit (edit message buffer; `wq` to finish) |
 
 | Key | Action |
@@ -215,5 +216,5 @@ Save **MERGED**, exit with `:qa`; abort with `:cq`.
 |-----|--------|
 | `<Leader>ko` | toggle (`:NeoCodeium! toggle` stops server) |
 | `<M-Tab>` (Alt+Tab) | accept **full** suggestion |
-| `<M-w>` / `<Tab>` | accept word |
+| `<Tab>` | accept word |
 | `<M-l>` | accept line |

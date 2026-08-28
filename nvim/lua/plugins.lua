@@ -25,7 +25,6 @@ vim.keymap.set('n', '<leader>ko', '<cmd>NeoCodeium toggle<CR>', {
 })
 --- Full suggestion accept (`accept`, not word). `<M-Tab>` = Alt+Tab; OS may capture it before Neovim.
 vim.keymap.set('i', '<M-Tab>', neocodeium.accept, { silent = true, desc = 'NeoCodeium: accept all' })
-vim.keymap.set('i', '<M-w>', neocodeium.accept_word, { silent = true, desc = 'NeoCodeium: accept word' })
 vim.keymap.set('i', '<M-l>', neocodeium.accept_line, { silent = true, desc = 'NeoCodeium: accept line' })
 vim.keymap.set('i', '<Tab>', function()
   if neocodeium.visible() then

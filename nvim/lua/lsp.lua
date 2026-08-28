@@ -1,48 +1,37 @@
--- lsp
 vim.lsp.enable({
-  'lua_ls',
-  'ts_ls',
-  'html',
-  'cssls',
-  'tailwindcss',
-  'jsonls',
-  'bashls',
-  'pylsp',
-  'roslyn',
+	"lua_ls",
+	"ts_ls",
+	"html",
+	"cssls",
+	"tailwindcss",
+	"jsonls",
+	"bashls",
+	"pylsp",
+	"roslyn",
 })
 
-vim.api.nvim_create_autocmd('LspAttach', {
-  callback = function(ev)
-    local client = vim.lsp.get_client_by_id(ev.data.client_id)
-    if client ~= nil and client:supports_method('textDocument/completion') then
-      -- Neovim doc pattern: autotrigger on every printable key (may be slow on huge files).
-      local provider = client.server_capabilities.completionProvider
-      if provider then
-        local chars = {}
-        for i = 32, 126 do
-          chars[#chars + 1] = string.char(i)
-        end
-        provider.triggerCharacters = chars
-      end
-      vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
-    end
+vim.api.nvim_create_autocmd("LspAttach", {
+	callback = function(ev)
+		local client = vim.lsp.get_client_by_id(ev.data.client_id)
+		if client and client:supports_method("textDocument/completion") then
+			local provider = client.server_capabilities.completionProvider
+			if provider then
+				provider.triggerCharacters = vim.iter(vim.fn.range(32, 126)):map(string.char):totable()
+			end
+			vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
+		end
 
-    local opts = { buffer = ev.buf, silent = true }
-    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
-    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
-    vim.keymap.set({ 'n', 'v' }, '<leader>f', function()
-      local format_opts = { async = false }
-      if vim.fn.mode():match('^[vV\22]') then
-        format_opts.range = {
-          start = vim.api.nvim_buf_get_mark(0, '<'),
-          ['end'] = vim.api.nvim_buf_get_mark(0, '>'),
-        }
-      end
-      vim.lsp.buf.format(format_opts)
-    end, vim.tbl_extend('force', opts, { desc = 'Format buffer or selection' }))
-  end,
+		local opts = { buffer = ev.buf, silent = true }
+		vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+
+		vim.keymap.set({ "n", "v" }, "<leader>f", function()
+			vim.lsp.buf.format({
+				async = false,
+				range = vim.fn.mode():match("^[vV\22]") and {
+					start = vim.api.nvim_buf_get_mark(0, "<"),
+					["end"] = vim.api.nvim_buf_get_mark(0, ">"),
+				} or nil,
+			})
+		end, vim.tbl_extend("force", opts, { desc = "Format buffer or selection" }))
+	end,
 })
-

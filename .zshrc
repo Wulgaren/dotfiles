@@ -143,6 +143,7 @@ alias grouplinks='python3 ~/Coding/Scripts/group_links.py ~/Desktop/Archive && t
 alias tree="ls -R"
 
 alias nano='nvim'
+alias vi='nvim'
 alias vim='nvim'
 
 _mega_upload_func() {

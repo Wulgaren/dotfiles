@@ -1,12 +1,6 @@
 local ignores = require("ignores")
 
--- Quote each -g pattern: zsh/bash otherwise expand `!**/.git/**` and rg gets nothing.
-local grep_parts = { "rg", "--vimgrep", "--smart-case", "--hidden" }
-for _, g in ipairs(ignores.EXCLUDE_GLOBS) do
-	grep_parts[#grep_parts + 1] = "-g"
-	grep_parts[#grep_parts + 1] = vim.fn.shellescape(g)
-end
-vim.opt.grepprg = table.concat(grep_parts, " ")
+vim.opt.grepprg = ignores.grepprg()
 vim.opt.grepformat = "%f:%l:%c:%m"
 
 local preview_group = vim.api.nvim_create_augroup("config-grep-preview", { clear = true })
@@ -19,9 +13,14 @@ local function close_preview()
 	end
 end
 
+local function list_info(win)
+	return vim.fn.getwininfo(win)[1]
+end
+
 local function preview_qf_item()
-	local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
-	if not wininfo or wininfo.quickfix ~= 1 or wininfo.loclist == 1 then
+	local win = vim.api.nvim_get_current_win()
+	local info = list_info(win)
+	if not info or info.quickfix ~= 1 or info.loclist == 1 then
 		return
 	end
 
@@ -86,8 +85,6 @@ local function open_qf_in_main()
 	end
 
 	vim.cmd("edit " .. vim.fn.fnameescape(fname))
-	-- pedit may already have loaded this buf; plain :edit then skips BufRead/FileType.
-	-- Empty filetype → no LSP attach. Force detect when missing.
 	if vim.bo.filetype == "" then
 		vim.cmd("filetype detect")
 	end
@@ -105,9 +102,18 @@ vim.api.nvim_create_autocmd("FileType", {
 	group = preview_group,
 	pattern = "qf",
 	callback = function(ev)
-		local win = vim.api.nvim_get_current_win()
-		local info = vim.fn.getwininfo(win)[1]
-		if not info or info.loclist == 1 then
+		local info = list_info(vim.api.nvim_get_current_win())
+		if not info or info.quickfix ~= 1 then
+			return
+		end
+
+		-- Loclist (diagnostics, LSP symbols): native jump via :ll
+		if info.loclist == 1 then
+			vim.keymap.set("n", "<CR>", ":ll<CR>", {
+				buffer = ev.buf,
+				silent = true,
+				desc = "Jump to loclist item (:ll)",
+			})
 			return
 		end
 
@@ -140,10 +146,7 @@ local function run_grep()
 			return
 		end
 
-		local cmd = { "rg", "--vimgrep", "--smart-case", "--hidden", "-F" }
-		vim.list_extend(cmd, ignores.rg_glob_args())
-		cmd[#cmd + 1] = "--"
-		cmd[#cmd + 1] = pattern
+		local cmd = ignores.rg_vimgrep_argv({ "-F" }, pattern)
 
 		local lines = vim.fn.systemlist(cmd)
 		local code = vim.v.shell_error
@@ -163,4 +166,3 @@ local function run_grep()
 end
 
 vim.keymap.set("n", "<C-t>", run_grep, { silent = true, desc = "Grep" })
-vim.keymap.set("n", "<leader>fg", run_grep, { silent = true, desc = "Grep" })

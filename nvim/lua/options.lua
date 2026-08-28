@@ -13,7 +13,6 @@ vim.o.signcolumn = "yes"
 vim.opt.completeopt = { "menu", "menuone", "noselect", "popup" }
 vim.o.pumheight = 12
 vim.o.wildmode = "noselect:lastused,full"
-vim.opt.wildoptions:append("pum")
 vim.o.swapfile = false
 vim.o.backup = false
 vim.o.tabstop = 4
@@ -28,6 +27,11 @@ vim.o.undofile = true
 vim.o.autoread = true
 vim.o.laststatus = 3
 vim.o.cmdheight = 0
+
+vim.diagnostic.config({ virtual_text = true })
+vim.keymap.set("n", "<leader>d", function()
+	vim.diagnostic.setloclist()
+end, { silent = true, desc = "Diagnostics → loclist" })
 
 local options_augroup = vim.api.nvim_create_augroup("config-options-autocmds", { clear = true })
 

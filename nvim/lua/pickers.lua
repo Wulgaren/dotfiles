@@ -1,5 +1,3 @@
-local M = {}
-
 -- ── Git branches ────────────────────────────────────────────────────────────
 
 local POLISH_ASCII = {
@@ -56,7 +54,7 @@ local function git(args)
 end
 
 ---Cmdline: :GitSwitch {name} — switch or create; set origin upstream if missing.
-function M.git_switch(name)
+local function git_switch(name)
 	local branch = sanitize_branch(name):gsub("^origin/", "")
 	if branch == "" then
 		vim.notify("Git: empty branch name", vim.log.levels.WARN)
@@ -84,7 +82,7 @@ function M.git_switch(name)
 end
 
 vim.api.nvim_create_user_command("GitSwitch", function(opts)
-	M.git_switch(opts.args)
+	git_switch(opts.args)
 end, {
 	nargs = 1,
 	complete = function(arglead)
@@ -100,20 +98,4 @@ end, {
 
 vim.keymap.set("n", "<C-h>", "<cmd>marks<CR>", { silent = true, desc = "List marks (:marks)" })
 vim.keymap.set("n", "<C-j>", ":b ", { silent = false, desc = "Buffer (:b)" })
-vim.keymap.set("n", "<leader>b", ":b ", { silent = false, desc = "Buffer (:b)" })
-vim.keymap.set("n", "<leader>fs", function()
-	local clients = vim.lsp.get_clients({ bufnr = 0 })
-	if #clients == 0 then
-		vim.notify("No LSP client attached", vim.log.levels.WARN)
-		return
-	end
-	vim.lsp.buf.document_symbol({
-		on_list = function(options)
-			vim.fn.setloclist(0, {}, " ", options)
-			vim.cmd("lopen")
-		end,
-	})
-end, { silent = true, desc = "LSP document symbols → loclist" })
 vim.keymap.set("n", "<leader>gc", ":GitSwitch ", { silent = false, desc = "Git switch/create branch" })
-
-return M

@@ -33,4 +33,27 @@ function M.rg_glob_args()
 	return args
 end
 
+--- Base rg vimgrep argv. Flags first, then `-g` globs, then optional `-- pattern`.
+function M.rg_vimgrep_argv(flags, pattern)
+	local cmd = { "rg", "--vimgrep", "--smart-case", "--hidden" }
+	vim.list_extend(cmd, flags or {})
+	vim.list_extend(cmd, M.rg_glob_args())
+	if pattern then
+		cmd[#cmd + 1] = "--"
+		cmd[#cmd + 1] = pattern
+	end
+	return cmd
+end
+
+--- 'grepprg' string with shell-escaped globs.
+function M.grepprg()
+	local parts = M.rg_vimgrep_argv()
+	for i = 2, #parts do
+		if parts[i - 1] == "-g" then
+			parts[i] = vim.fn.shellescape(parts[i])
+		end
+	end
+	return table.concat(parts, " ")
+end
+
 return M
