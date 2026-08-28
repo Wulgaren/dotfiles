@@ -28,8 +28,12 @@ local modes = {
 
 function _G._statusline()
 	local mode = modes[vim.fn.mode()] or vim.fn.mode():upper()
-	local branch = vim.b.git_branch and "%#StlGit# " .. vim.b.git_branch .. " %*" or ""
-	local path = vim.b.rel_path or "%f"
+	local head = vim.fn.FugitiveHead()
+	local branch = head ~= "" and "%#StlGit# " .. head .. " %*" or ""
+	local root = vim.fn.FugitiveWorkTree()
+	local bufname = vim.api.nvim_buf_get_name(0)
+	local path = (root ~= "" and bufname ~= "" and vim.fs.relpath(root, bufname))
+		or (bufname ~= "" and vim.fn.expand("%:p:~") or "%f")
 	local modified = vim.bo.modified and " [+]" or ""
 
 	local diag = ""
@@ -45,18 +49,6 @@ function _G._statusline()
 	return "%#StlMode# " .. mode .. " %*" .. branch .. " " .. path .. modified .. "%=" .. diag .. vim.bo.filetype .. " %l:%c"
 end
 
-vim.api.nvim_create_autocmd("BufEnter", {
-	callback = function()
-		local root = vim.trim(vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"))
-		if root ~= "" then
-			vim.b.git_branch = vim.trim(vim.fn.system("git branch --show-current 2>/dev/null"))
-			vim.b.rel_path = vim.fn.expand("%:p"):sub(#root + 2)
-		else
-			vim.b.git_branch = nil
-			vim.b.rel_path = vim.fn.expand("%:p:~")
-		end
-	end,
-})
 
 vim.api.nvim_create_autocmd("DiagnosticChanged", {
 	callback = function()
