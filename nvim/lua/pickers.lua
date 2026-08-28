@@ -15,6 +15,20 @@ local function is_qf_win(win)
 	return info and info.quickfix == 1 and info.loclist ~= 1
 end
 
+local function ensure_loaded(bufnr)
+	if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].filetype ~= "" then
+		return bufnr
+	end
+	vim.fn.bufload(bufnr)
+	if vim.bo[bufnr].filetype == "" then
+		local ft = vim.filetype.match({ filename = vim.api.nvim_buf_get_name(bufnr) })
+		if ft then
+			vim.bo[bufnr].filetype = ft
+		end
+	end
+	return bufnr
+end
+
 local function open_in_main()
 	local line, item = qf_item()
 	vim.cmd("silent! pclose | cclose")
@@ -28,7 +42,7 @@ local function open_in_main()
 		end
 	end
 	if item.bufnr > 0 and vim.api.nvim_buf_is_valid(item.bufnr) then
-		vim.api.nvim_set_current_buf(item.bufnr)
+		vim.api.nvim_set_current_buf(ensure_loaded(item.bufnr))
 		if vim.bo[item.bufnr].buftype ~= "terminal" then
 			local lnum = math.max(item.lnum or 1, 1)
 			pcall(vim.api.nvim_win_set_cursor, 0, { lnum, math.max((item.col or 1) - 1, 0) })
@@ -53,21 +67,32 @@ local function preview_item()
 	if not is_qf_win(vim.api.nvim_get_current_win()) then
 		return
 	end
-	local _, item = qf_item()
+	local line, item = qf_item()
 	if not item or item.bufnr == 0 then
 		return
 	end
-	vim.cmd("silent! pedit")
-	for _, w in ipairs(vim.fn.getwininfo()) do
-		if vim.wo[w.winid].previewwindow then
-			local buf = preview_buf(item.bufnr)
-			vim.api.nvim_win_set_buf(w.winid, buf)
-			local lnum = buf == item.bufnr and math.max(item.lnum or 1, 1) or vim.api.nvim_buf_line_count(buf)
-			local col = buf == item.bufnr and math.max((item.col or 1) - 1, 0) or 0
-			pcall(vim.api.nvim_win_set_cursor, w.winid, { math.max(lnum, 1), col })
-			break
+
+	vim.schedule(function()
+		if not is_qf_win(vim.api.nvim_get_current_win()) then
+			return
 		end
-	end
+		local _, current = qf_item()
+		if not current or current.bufnr ~= item.bufnr or vim.fn.line(".") ~= line then
+			return
+		end
+		ensure_loaded(item.bufnr)
+		vim.cmd("silent! pedit")
+		for _, w in ipairs(vim.fn.getwininfo()) do
+			if vim.wo[w.winid].previewwindow then
+				local buf = preview_buf(item.bufnr)
+				vim.api.nvim_win_set_buf(w.winid, buf)
+				local lnum = buf == item.bufnr and math.max(item.lnum or 1, 1) or vim.api.nvim_buf_line_count(buf)
+				local col = buf == item.bufnr and math.max((item.col or 1) - 1, 0) or 0
+				pcall(vim.api.nvim_win_set_cursor, w.winid, { math.max(lnum, 1), col })
+				break
+			end
+		end
+	end)
 end
 
 vim.api.nvim_create_autocmd("FileType", {

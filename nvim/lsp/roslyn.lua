@@ -25,45 +25,12 @@ local function mason_roslyn_cmd()
   end
 end
 
-local function dotnet_root_for_buf(bufnr)
-  local path = vim.api.nvim_buf_get_name(bufnr)
-  return dotnet_root.roslyn_root(path)
-end
-
-local function choose_solution(targets)
-  for _, t in ipairs(targets) do
-    local lower = t:lower()
-    if vim.endswith(t, '.sln') or vim.endswith(t, '.slnx') or vim.endswith(t, '.slnf') then
-      if not lower:find('test', 1, true) then
-        return t
-      end
-    end
-  end
-  for _, t in ipairs(targets) do
-    if not t:lower():find('test', 1, true) then
-      return t
-    end
-  end
-  return targets[1]
-end
-
-local function solutions_in_dir(root_dir)
-  local out = {}
-  for entry, typ in fs.dir(root_dir) do
-    if typ == 'file' and (vim.endswith(entry, '.sln') or vim.endswith(entry, '.slnx') or vim.endswith(entry, '.slnf')) then
-      out[#out + 1] = fs.joinpath(root_dir, entry)
-    end
-  end
-  table.sort(out)
-  return out
-end
-
 local cmd = mason_roslyn_cmd()
 
 return vim.tbl_extend('force', {
   filetypes = { 'cs' },
   root_dir = function(bufnr, on_dir)
-    on_dir(dotnet_root_for_buf(bufnr))
+    on_dir(dotnet_root.roslyn_root(vim.api.nvim_buf_get_name(bufnr)))
   end,
   on_init = {
     function(client)
@@ -72,12 +39,11 @@ return vim.tbl_extend('force', {
         return
       end
 
-      local solutions = solutions_in_dir(root_dir)
-      if #solutions > 0 then
-        local target = choose_solution(solutions)
-        vim.notify('Roslyn: ' .. vim.fn.fnamemodify(target, ':t'), vim.log.levels.INFO, { title = 'roslyn' })
+      local sln = dotnet_root.sln_in_dir(root_dir)
+      if sln then
+        vim.notify('Roslyn: ' .. vim.fn.fnamemodify(sln, ':t'), vim.log.levels.INFO, { title = 'roslyn' })
         ---@diagnostic disable-next-line: param-type-mismatch
-        client:notify('solution/open', { solution = vim.uri_from_fname(target) })
+        client:notify('solution/open', { solution = vim.uri_from_fname(sln) })
         return
       end
 
