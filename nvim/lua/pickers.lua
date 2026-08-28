@@ -16,6 +16,11 @@ local function list_info(win)
 	return vim.fn.getwininfo(win)[1]
 end
 
+local function open_in_main()
+	close_preview()
+	vim.cmd("cc! | cclose")
+end
+
 local function preview_item()
 	local info = list_info(vim.api.nvim_get_current_win())
 	if not info or info.quickfix ~= 1 or info.loclist == 1 then
@@ -44,69 +49,12 @@ local function preview_item()
 	end
 end
 
-local function main_edit_win(qf_win)
-	local alt = vim.fn.win_getid(vim.fn.winnr("#"))
-	local fallback
-	for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-		if win ~= qf_win and not vim.wo[win].previewwindow then
-			local info = list_info(win)
-			if info and info.quickfix ~= 1 then
-				if win == alt then
-					return win
-				end
-				fallback = fallback or win
-			end
-		end
-	end
-	return fallback
-end
-
-local function open_in_main()
-	local qf_win = vim.api.nvim_get_current_win()
-	local item = vim.fn.getqflist()[vim.fn.line(".")]
-	if not item or item.bufnr == 0 then
-		return
-	end
-
-	close_preview()
-
-	local target = main_edit_win(qf_win)
-	if target then
-		vim.api.nvim_set_current_win(target)
-	end
-
-	local fname = vim.api.nvim_buf_get_name(item.bufnr)
-	if fname == "" then
-		vim.api.nvim_win_set_buf(0, item.bufnr)
-		vim.cmd("cclose")
-		return
-	end
-
-	vim.cmd("edit " .. vim.fn.fnameescape(fname))
-	if vim.bo.filetype == "" then
-		vim.cmd("filetype detect")
-	end
-	local lnum = math.min(math.max(item.lnum or 1, 1), vim.api.nvim_buf_line_count(0))
-	local col = math.max((item.col or 1) - 1, 0)
-	pcall(vim.api.nvim_win_set_cursor, 0, { lnum, col })
-	vim.cmd("cclose")
-end
-
 vim.api.nvim_create_autocmd("FileType", {
 	group = preview_group,
 	pattern = "qf",
 	callback = function(ev)
 		local info = list_info(vim.api.nvim_get_current_win())
-		if not info or info.quickfix ~= 1 then
-			return
-		end
-
-		if info.loclist == 1 then
-			vim.keymap.set("n", "<CR>", ":ll<CR>", {
-				buffer = ev.buf,
-				silent = true,
-				desc = "Jump to loclist item (:ll)",
-			})
+		if not info or info.quickfix ~= 1 or info.loclist == 1 then
 			return
 		end
 
