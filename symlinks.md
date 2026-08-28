@@ -1,6 +1,7 @@
 ~/ :
 .aerospace.toml
 .gitconfig
+.gitconfig.local → `dotfiles/.gitconfig.local` (per-machine; gitignored — copy from `.gitconfig.local.example`)
 .zshrc
 .p10k.zsh
 

@@ -1,6 +1,6 @@
-[user]
-	name = Wulgaren
-	email = natios100@gmail.com
+[include]
+	path = .gitconfig.local
+
 [core]
 	editor = vim	
 	pager = delta
@@ -77,9 +77,3 @@
 [mergetool]
 	prompt = false
 	keepBackup = false
-[credential "https://github.com"]
-	helper = 
-	helper = !gh auth git-credential
-[credential "https://gist.github.com"]
-	helper = 
-	helper = !gh auth git-credential
