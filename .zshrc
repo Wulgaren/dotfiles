@@ -1,3 +1,9 @@
+# Windows SSH: wmux session manager. Shells running inside wmux skip it.
+if [[ -o interactive && -n "${SSH_CONNECTION:-}" && -z "${WMUX_SESSION:-}" ]] &&
+  [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]]; then
+  [[ -r "$HOME/.zsh/wmux-ssh.zsh" ]] && source "$HOME/.zsh/wmux-ssh.zsh"
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -19,6 +25,11 @@ elif [[ "$OSTYPE" == linux-gnu* ]]; then
   else
     source "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh-theme"
   fi
+elif [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]]; then
+    # Windows (MSYS2 / Git Bash / WSL-zsh)
+  source ~/powerlevel10k/powerlevel10k.zsh-theme
+  source "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  source <(fzf --zsh)
 fi
 
 export EDITOR=vim

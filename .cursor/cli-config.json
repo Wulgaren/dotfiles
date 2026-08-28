@@ -28,13 +28,29 @@
       "Shell(true)",
       "Shell(readlink)",
       "Shell(stat)",
-      "Shell(az rest --method get)"
+      "Shell(az rest --method get)",
+      "Shell(powershell)",
+      "Shell(powershell.exe)",
+      "Shell(dotnet)",
+      "Shell(Set-Location)",
+      "Shell(npx biome)",
+      "Shell(npx esbuild)",
+      "Shell(Test-Path)",
+      "Shell(Get-ChildItem)",
+      "Shell(Select-Object)",
+      "Shell(Measure-Object)",
+      "Shell(\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe\")",
+      "Shell(grep)",
+      "Shell(true)",
+      "Shell(sort)",
+      "Shell(npm test)",
+      "Shell(npx vitest)"
     ],
     "deny": []
   },
   "version": 1,
   "editor": {
-    "vimMode": true
+    "vimMode": false
   },
   "display": {
     "showLineNumbers": false,
@@ -44,6 +60,7 @@
   },
   "notifications": true,
   "hints": true,
+  "modelSlashCommands": true,
   "rewind": false,
   "suggestNextPrompt": false,
   "installedChannel": "prod",
@@ -59,14 +76,22 @@
   },
   "hasChangedDefaultModel": true,
   "maxMode": false,
+  "maxModeAutoEnabled": false,
   "modelParameters": {
-    "composer-2.5": [
+    "composer-2": [
       {
         "id": "fast",
         "value": "true"
       }
     ],
     "default": [],
+    "composer-1.5": [],
+    "composer-2.5": [
+      {
+        "id": "fast",
+        "value": "false"
+      }
+    ],
     "claude-fable-5": [
       {
         "id": "thinking",
@@ -74,11 +99,35 @@
       },
       {
         "id": "context",
-        "value": "300k"
+        "value": "1m"
       },
       {
         "id": "effort",
         "value": "high"
+      }
+    ],
+    "grok-4.5": [
+      {
+        "id": "effort",
+        "value": "high"
+      },
+      {
+        "id": "fast",
+        "value": "true"
+      }
+    ],
+    "gpt-5.6-sol": [
+      {
+        "id": "context",
+        "value": "272k"
+      },
+      {
+        "id": "reasoning",
+        "value": "xhigh"
+      },
+      {
+        "id": "fast",
+        "value": "false"
       }
     ]
   },
@@ -86,6 +135,12 @@
     "modelId": "default",
     "parameters": []
   },
+  "modelSelectionHistory": [
+    "default",
+    "gpt-5.6-sol",
+    "grok-4.5",
+    "composer-2.5"
+  ],
   "privacyCache": {
     "ghostMode": true,
     "privacyMode": 2,
@@ -112,6 +167,7 @@
     "useHttp1ForAgent": false
   },
   "approvalMode": "allowlist",
+  "autoAcceptWebSearch": false,
   "sandbox": {
     "mode": "disabled",
     "networkAccess": "user_config_with_defaults"
