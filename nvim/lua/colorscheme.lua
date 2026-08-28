@@ -1,10 +1,19 @@
-local function apply_readability_overrides(is_light)
-	local fg = is_light and "#3f455e" or "#e8ecff"
-	local fg_nc = is_light and "#7a8199" or "#a7b0cc"
-	local line_nr = is_light and "#525a76" or "#cfd5f2"
-	local comment_fg = is_light and line_nr or "#737994"
-	local border = is_light and "#59627f" or "#6c7086"
-	local cursorline_bg = is_light and "#e9ecf6" or "#3b3f52"
+local frappe = {
+	surface0 = "#414559",
+	surface1 = "#51576d",
+	text = "#c6d0f5",
+	subtext1 = "#b5bfe2",
+	overlay0 = "#737994",
+	lavender = "#babbf1",
+}
+
+local function apply_readability_overrides()
+	local fg = "#e8ecff"
+	local fg_nc = "#a7b0cc"
+	local line_nr = "#cfd5f2"
+	local comment_fg = "#737994"
+	local border = "#6c7086"
+	local cursorline_bg = "#3b3f52"
 
 	local groups = {
 		Normal = { fg = fg, bg = "NONE" },
@@ -46,23 +55,29 @@ local function apply_readability_overrides(is_light)
 	end
 end
 
-local function set_catppuccin_light()
-	vim.o.background = "light"
-	vim.cmd.colorscheme("catppuccin")
-	apply_readability_overrides(true)
+local function apply_frappe_menu_overrides()
+	local c = frappe
+	local menu_groups = {
+		Pmenu = { fg = c.text, bg = c.surface0 },
+		PmenuSel = { fg = c.lavender, bg = c.surface1, bold = true },
+		PmenuSbar = { bg = c.surface1 },
+		PmenuThumb = { bg = c.overlay0 },
+		PmenuMatch = { fg = c.text, bold = true },
+		PmenuExtra = { fg = c.subtext1, bg = c.surface0 },
+		PmenuExtraSel = { fg = c.subtext1, bg = c.surface1, bold = true },
+	}
+	for group, spec in pairs(menu_groups) do
+		vim.api.nvim_set_hl(0, group, spec)
+	end
 end
 
 local function set_catppuccin_dark()
 	vim.o.background = "dark"
 	vim.cmd.colorscheme("catppuccin")
-	apply_readability_overrides(false)
+	apply_readability_overrides()
+	apply_frappe_menu_overrides()
 end
 
-vim.api.nvim_create_user_command("CatppuccinLight", set_catppuccin_light, {})
 vim.api.nvim_create_user_command("CatppuccinDark", set_catppuccin_dark, {})
 
-if vim.o.background == "light" then
-	set_catppuccin_light()
-else
-	set_catppuccin_dark()
-end
+set_catppuccin_dark()

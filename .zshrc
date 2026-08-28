@@ -27,13 +27,6 @@ export VISUAL=vim
 # Line editing: emacs keys (C-a/C-e, M-f/M-b, C-k, …). Vi-style: bindkey -v
 bindkey -e
 
-# Ghostty (and other modern terminals) send CSI with Alt modifier for Option+arrows
-# after unbinding Ghostty's esc:b / esc:f remaps. Without these, leftover ";3D" prints.
-bindkey '\e[1;3D' backward-word   # Option+Left
-bindkey '\e[1;3C' forward-word    # Option+Right
-bindkey '\e[3;3~' kill-word       # Option+Delete (forward)
-bindkey '\e^?'    backward-kill-word  # Option+Backspace (ESC DEL)
-
 WORDCHARS=''
 
 # Completion: run once, before plugins
@@ -135,7 +128,7 @@ coding() {
         _nvim_sync_cwd
 }
 
-alias music-backup="mega-put ~/Music/Music/Music/Media.localized/Music/* Music"
+alias music-backup='~/Coding/scripts/mega-sync-missing.sh'
 
 alias insta-dl="node ~/Coding/insta-downloader/src/fastdl.ts"
 
