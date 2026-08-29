@@ -49,6 +49,6 @@ docker-compose.override.yml
 
 build/
 
-# vendored theme (clone via symlinks.md)
+# vendored theme (clone via symlinks.txt note / qutebrowser/catppuccin-README.txt)
 qutebrowser/catppuccin/
 __pycache__/

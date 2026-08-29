@@ -1,0 +1,55 @@
+# repo-path  destination
+# OS tags: mac: linux: win:  (untagged = all OS; if this OS has tagged lines for a repo, only those apply)
+# kinds: link | copy | note
+
+# home
+link .aerospace.toml ~/.aerospace.toml
+link .gitconfig ~/.gitconfig
+link .zshrc ~/.zshrc
+link .p10k.zsh ~/.p10k.zsh
+link .inputrc ~/.inputrc
+link .skhdrc ~/.skhdrc
+link .vimrc ~/.vimrc
+copy .gitconfig.local.example ~/.gitconfig.local
+
+# ~/.config
+link btop ~/.config/btop
+link fontconfig ~/.config/fontconfig
+link foot ~/.config/foot
+link fresh ~/.config/fresh
+link gallery-dl ~/.config/gallery-dl
+link gh ~/.config/gh
+link ghostty ~/.config/ghostty
+link git ~/.config/git
+link gtk-3.0 ~/.config/gtk-3.0
+link gtk-4.0 ~/.config/gtk-4.0
+link hypr ~/.config/hypr
+link kitty ~/.config/kitty
+link mimeapps.list ~/.config/mimeapps.list
+link nvim ~/.config/nvim
+link nvim win:%LOCALAPPDATA%/nvim
+link qutebrowser ~/.config/qutebrowser
+link starship.toml ~/.config/starship.toml
+link sway ~/.config/sway
+link swaylock ~/.config/swaylock
+link waybar ~/.config/waybar
+link Yatoro ~/.config/Yatoro
+link yt-dlp ~/.config/yt-dlp
+
+# cursor / agents / codex
+link .cursor/rules ~/.cursor/rules
+link .cursor/skills ~/.cursor/skills
+link .cursor/skills ~/.agents/skills
+link .cursor/cli-config.json ~/.cursor/cli-config.json
+link AGENT.md ~/.agents/AGENT.md
+link AGENT.md ~/.codex/AGENTS.md
+
+# mac app support
+link discordo mac:~/Library/Application Support/discordo
+link concord mac:~/Library/Application Support/concord
+
+# windows extras
+link zsh/windows/wmux-ssh.zsh win:~/.zsh/wmux-ssh.zsh
+
+# notes (printed on sync)
+note qutebrowser git clone https://github.com/catppuccin/qutebrowser.git qutebrowser/catppuccin
