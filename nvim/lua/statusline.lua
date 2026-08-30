@@ -2,19 +2,28 @@ local function theme_fg(name)
 	return vim.api.nvim_get_hl(0, { name = name, link = false }).fg
 end
 
+local SEP_R, SEP_L = "", ""
+
 local function apply_segment_hls()
 	local pms = vim.api.nvim_get_hl(0, { name = "PmenuSel", link = false })
 	local dir = vim.api.nvim_get_hl(0, { name = "Directory", link = false })
 	local fg = vim.api.nvim_get_hl(0, { name = "Cursor", link = false }).fg
 	local bar_fg = vim.api.nvim_get_hl(0, { name = "StatusLine", link = false }).fg
-	vim.api.nvim_set_hl(0, "StlNormal", { fg = fg, bg = pms.fg })
-	vim.api.nvim_set_hl(0, "StlInsert", { fg = fg, bg = theme_fg("String") })
-	vim.api.nvim_set_hl(0, "StlVisual", { fg = fg, bg = theme_fg("Statement") })
-	vim.api.nvim_set_hl(0, "StlCommand", { fg = fg, bg = theme_fg("WarningMsg") })
-	vim.api.nvim_set_hl(0, "StlReplace", { fg = fg, bg = theme_fg("ErrorMsg") })
-	vim.api.nvim_set_hl(0, "StlTerminal", { fg = fg, bg = dir.fg })
+	local function chip(name, bg)
+		vim.api.nvim_set_hl(0, name, { fg = fg, bg = bg })
+		vim.api.nvim_set_hl(0, name .. "Sep", { fg = bg })
+		vim.api.nvim_set_hl(0, name .. "SepGit", { fg = bg, bg = pms.bg })
+	end
+	chip("StlNormal", pms.fg)
+	chip("StlInsert", theme_fg("String"))
+	chip("StlVisual", theme_fg("Statement"))
+	chip("StlCommand", theme_fg("WarningMsg"))
+	chip("StlReplace", theme_fg("ErrorMsg"))
+	chip("StlTerminal", dir.fg)
 	vim.api.nvim_set_hl(0, "StlGit", { fg = dir.fg, bg = pms.bg })
+	vim.api.nvim_set_hl(0, "StlGitSep", { fg = pms.bg })
 	vim.api.nvim_set_hl(0, "StlRight", { fg = bar_fg, bg = pms.bg })
+	vim.api.nvim_set_hl(0, "StlRightSep", { fg = pms.bg })
 end
 
 vim.api.nvim_create_autocmd("ColorScheme", {
@@ -45,7 +54,8 @@ function _G._statusline()
 	local mode = spec and spec[1] or vim.fn.mode():upper()
 	local hl = spec and spec[2] or "StlNormal"
 	local head = vim.fn.FugitiveHead()
-	local git = head ~= "" and ("%#StlGit# " .. head .. " %*") or ""
+	local has_git = head ~= ""
+	local git = has_git and ("%#StlGit# " .. head .. " %#StlGitSep#" .. SEP_R) or ""
 	local root = vim.fn.FugitiveWorkTree()
 	local name = vim.api.nvim_buf_get_name(0)
 	local path = (root ~= "" and name ~= "" and vim.fs.relpath(root, name))
@@ -59,7 +69,15 @@ function _G._statusline()
 		end
 	end
 
-	return "%#" .. hl .. "# " .. mode .. " %*" .. git .. " " .. path .. "%m%=" .. diag .. "%#StlRight# %{&filetype} %l:%c "
+	local mode_sep = has_git and "SepGit#" or "Sep#"
+	return "%#" .. hl .. "# " .. mode .. " %#" .. hl .. mode_sep .. SEP_R .. git
+		.. "%#StatusLine# "
+		.. path
+		.. "%m%="
+		.. diag
+		.. "%#StlRightSep#"
+		.. SEP_L
+		.. "%#StlRight# %{&filetype} %l:%c "
 end
 
 vim.api.nvim_create_autocmd("DiagnosticChanged", {
