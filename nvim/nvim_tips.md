@@ -30,6 +30,7 @@
 | `:dis / register + motion` | check your clipboard and use it |
 | `q:` | command-line window (Vim keybinds, history) |
 | `o in visual` | jump between start/end of selection |
+| `d/c/y + / + word` | delete/replace/copy until the searched phrase |
 
 ## Change operators
 

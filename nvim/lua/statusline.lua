@@ -73,7 +73,7 @@ function _G._statusline()
 	return "%#" .. hl .. "# " .. mode .. " %#" .. hl .. mode_sep .. SEP_R .. git
 		.. "%#StatusLine# "
 		.. path
-		.. "%m%="
+		.. "%m%= "
 		.. diag
 		.. "%#StlRightSep#"
 		.. SEP_L
