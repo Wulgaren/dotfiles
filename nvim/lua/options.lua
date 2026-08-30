@@ -45,6 +45,10 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+require("vim._core.ui2").enable({
+	msg = { targets = "msg" },
+})
+
 --- Auto-show wildmenu popup while typing in :, /, and ?
 vim.api.nvim_create_autocmd("CmdlineChanged", {
 	group = options_augroup,

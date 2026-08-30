@@ -28,7 +28,8 @@
 | `:w !sudo tee %` | write file with sudo privileges |
 | `C-z / fg` | suspend and go back to Vim |
 | `:dis / register + motion` | check your clipboard and use it |
-| `: then C-f` | editing command line with Vim keybinds |
+| `q:` | command-line window (Vim keybinds, history) |
+| `o in visual` | jump between start/end of selection |
 
 ## Change operators
 
