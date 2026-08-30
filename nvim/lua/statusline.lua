@@ -1,8 +1,17 @@
+local function theme_fg(name)
+	return vim.api.nvim_get_hl(0, { name = name, link = false }).fg
+end
+
 local function apply_segment_hls()
 	local pms = vim.api.nvim_get_hl(0, { name = "PmenuSel", link = false })
 	local dir = vim.api.nvim_get_hl(0, { name = "Directory", link = false })
-	local vis = vim.api.nvim_get_hl(0, { name = "Visual", link = false })
-	vim.api.nvim_set_hl(0, "StlMode", { fg = pms.fg, bg = vis.bg })
+	local fg = vim.api.nvim_get_hl(0, { name = "Cursor", link = false }).fg
+	vim.api.nvim_set_hl(0, "StlNormal", { fg = fg, bg = pms.fg })
+	vim.api.nvim_set_hl(0, "StlInsert", { fg = fg, bg = theme_fg("String") })
+	vim.api.nvim_set_hl(0, "StlVisual", { fg = fg, bg = theme_fg("Statement") })
+	vim.api.nvim_set_hl(0, "StlCommand", { fg = fg, bg = theme_fg("WarningMsg") })
+	vim.api.nvim_set_hl(0, "StlReplace", { fg = fg, bg = theme_fg("ErrorMsg") })
+	vim.api.nvim_set_hl(0, "StlTerminal", { fg = fg, bg = dir.fg })
 	vim.api.nvim_set_hl(0, "StlGit", { fg = dir.fg, bg = pms.bg })
 end
 
@@ -13,21 +22,24 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 apply_segment_hls()
 
 local modes = {
-	n = "NORMAL",
-	i = "INSERT",
-	v = "VISUAL",
-	V = "V-LINE",
-	["\22"] = "V-BLOCK",
-	c = "COMMAND",
-	t = "TERMINAL",
-	R = "REPLACE",
-	s = "SELECT",
-	S = "S-LINE",
-	["\19"] = "S-BLOCK",
+	n = { "NORMAL", "StlNormal" },
+	i = { "INSERT", "StlInsert" },
+	v = { "VISUAL", "StlVisual" },
+	V = { "V-LINE", "StlVisual" },
+	["\22"] = { "V-BLOCK", "StlVisual" },
+	c = { "COMMAND", "StlCommand" },
+	t = { "TERMINAL", "StlTerminal" },
+	R = { "REPLACE", "StlReplace" },
+	s = { "SELECT", "StlVisual" },
+	S = { "S-LINE", "StlVisual" },
+	["\19"] = { "S-BLOCK", "StlVisual" },
 }
 
 function _G._statusline()
-	local mode = modes[vim.fn.mode()] or vim.fn.mode():upper()
+	local m = vim.fn.mode()
+	local spec = modes[m]
+	local mode = spec and spec[1] or m:upper()
+	local mode_hl = spec and spec[2] or "StlNormal"
 	local head = vim.fn.FugitiveHead()
 	local branch = head ~= "" and "%#StlGit# " .. head .. " %*" or ""
 	local root = vim.fn.FugitiveWorkTree()
@@ -46,7 +58,7 @@ function _G._statusline()
 		end
 	end
 
-	return "%#StlMode# " .. mode .. " %*" .. branch .. " " .. path .. modified .. "%=" .. diag .. vim.bo.filetype .. " %l:%c"
+	return "%#" .. mode_hl .. "# " .. mode .. " %*" .. branch .. " " .. path .. modified .. "%=" .. diag .. vim.bo.filetype .. " %l:%c"
 end
 
 

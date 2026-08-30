@@ -2,8 +2,10 @@ vim.pack.add({
   'https://github.com/mason-org/mason.nvim',
   'https://github.com/monkoose/neocodeium',
   'https://github.com/tpope/vim-fugitive',
+  'https://github.com/m4xshen/hardtime.nvim'
 }, { confirm = false, load = true })
 
+require('hardtime').setup()
 require('mason').setup({
   registries = {
     'github:mason-org/mason-registry',
