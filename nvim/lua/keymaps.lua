@@ -1,4 +1,5 @@
 vim.keymap.set('n', '<leader>p', '"+p', { silent = true })
+vim.keymap.set('i', '<leader>p', '<C-r>+', { silent = true })
 
 vim.keymap.set('n', '<C-s>', '<cmd>write<CR>', { silent = true })
 vim.keymap.set('i', '<C-s>', '<Esc><cmd>write<CR>a', { silent = true })

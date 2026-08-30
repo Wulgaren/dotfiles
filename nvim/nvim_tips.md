@@ -28,7 +28,7 @@
 | `:w !sudo tee %` | write file with sudo privileges |
 | `C-z / fg` | suspend and go back to Vim |
 | `:dis / register + motion` | check your clipboard and use it |
-| `q:` | command-line window (Vim keybinds, history) |
+| `q: / : then C-f` | command-line window (Vim keybinds, history) |
 | `o in visual` | jump between start/end of selection |
 | `d/c/y + / + word` | delete/replace/copy until the searched phrase |
 

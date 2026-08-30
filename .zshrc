@@ -114,9 +114,6 @@ alias mega-upload='_mega_upload_func'
 
 alias iina="/Applications/IINA.app/Contents/MacOS/iina-cli --mpv-af='lavfi=[dynaudnorm=f=250:g=15:p=0.95:r=0.25:m=12]'"
 
-# zsh only: *~*.(#i)db = not *.db, (om[1,20]) = newest 20. No /usr/bin or grep=rg; `!` avoided (history)
-alias recent-wallpapers='( setopt null_glob extended_glob; cd ~/Library/Containers/com.apple.wallpaper.agent/Data/Library/Caches/com.apple.wallpaper.caches/extension-com.apple.wallpaper.extension.image/ || exit; f=(*~*.(#i)db(om[1,20]N)); (( $#f )) && open -- $f; )'
-
 alias bun='npm'
 
 alias clear="clear && printf '\e[3J'"
@@ -169,6 +166,8 @@ gallery-dl() { "/Users/natios/Coding/gallerydl/.venv/bin/python" -m gallery_dl "
 twitter-curator() {
   ~/Coding/PhotoScanner/venv/bin/python3 ~/Coding/PhotoScanner/src/twitter_curator.py --no-listen --hours "${1:-28}"
 }
+
+alias recent-wallpapers='~/Coding/PhotoScanner/venv/bin/python3 ~/Coding/PhotoScanner/src/find_wallpaper.py'
 
 # fzf → vim: current directory
 fzv() {
