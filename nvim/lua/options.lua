@@ -49,6 +49,27 @@ require("vim._core.ui2").enable({
 	msg = { targets = "msg" },
 })
 
+local ui2 = require("vim._core.ui2")
+local messages = require("vim._core.ui2.messages")
+local set_pos = messages.set_pos
+function messages.set_pos(tgt)
+	set_pos(tgt)
+	local win = ui2.wins.msg
+	if not (win and vim.api.nvim_win_is_valid(win)) then
+		return
+	end
+	local cfg = vim.api.nvim_win_get_config(win)
+	if cfg.hide then
+		return
+	end
+	vim.api.nvim_win_set_config(win, {
+		relative = cfg.relative,
+		anchor = "SW",
+		row = cfg.row,
+		col = 0,
+	})
+end
+
 --- Auto-show wildmenu popup while typing in :, /, and ?
 vim.api.nvim_create_autocmd("CmdlineChanged", {
 	group = options_augroup,
