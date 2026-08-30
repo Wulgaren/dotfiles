@@ -96,15 +96,12 @@ setopt SHARE_HISTORY
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # aliases
-alias daudio="bash ~/Coding/Scripts/download thumbnail.sh"
-alias daudio="bash ~/Coding/Scripts/download\ thumbnail.sh"
-alias dvideo="bash ~/Coding/Scripts/download\ video.sh"
-alias daudio="bash ~/Coding/Scripts/download\ audio.sh"
-alias dthumbnail="bash ~/Coding/Scripts/download\ thumbnail.sh"
-alias bluetooth_silence="bash ~/Coding/Scripts/bluetoothsilence.sh"
-alias dvideo="bash ~/Coding/Scripts/download\ video.sh"
-alias dvideo="bash ~/Coding/Scripts/download\ vid.sh"
-alias dphoto="bash ~/Coding/Scripts/download\ photos.sh"
+alias daudio='bash ~/Coding/scripts/download/download\ audio.sh'
+alias dvideo='bash ~/Coding/scripts/download/download\ vid.sh'
+alias dphoto='bash ~/Coding/scripts/download/download\ photos.sh'
+alias dthumbnail='bash ~/Coding/scripts/download/download\ thumbnail.sh'
+alias bluetooth_silence='bash ~/Coding/scripts/misc/bluetoothsilence.sh'
+alias pick='~/Coding/scripts/pick.sh'
 
 alias ai="bash ~/Coding/instant-ai-cli/ask-groq.sh"
 alias ais="bash ~/Coding/instant-ai-cli/ask-cursor.sh"
@@ -139,17 +136,17 @@ coding() {
         _nvim_sync_cwd
 }
 
-alias music-backup='~/Coding/scripts/mega-sync-missing.sh'
+alias music-backup='~/Coding/scripts/mega/mega-sync-missing.sh'
 
 alias insta-dl="node ~/Coding/insta-downloader/src/fastdl.ts"
 
 #alias agent='safehouse --add-dirs-ro=~/Coding agent'
 
-alias newrepo="bash ~/Coding/Scripts/newrepo.sh"
+alias newrepo='bash ~/Coding/scripts/git/newrepo.sh'
 
 alias grep='rg -i'
 
-alias grouplinks='python3 ~/Coding/Scripts/group_links.py ~/Desktop/Archive && trash ~/Desktop/Archive'
+alias grouplinks='python3 ~/Coding/scripts/misc/group_links.py ~/Desktop/Archive && trash ~/Desktop/Archive'
 
 alias tree="ls -R"
 
@@ -158,7 +155,7 @@ alias vi='nvim'
 alias vim='nvim'
 
 _mega_upload_func() {
-  source ~/Coding/Scripts/mega-upload.zsh
+  source ~/Coding/scripts/mega/mega-upload.zsh
   megaupload "$@"
 }
 
