@@ -165,6 +165,12 @@ Open with `<Leader>e` (toggle; press again to return to previous buffer).
 | `<Leader>f` | format buffer / selection |
 | `<Leader>d` | buffer diagnostics |
 
+### LSP Autocomplete
+
+| Key | Action |
+| `<C-n> / <C-p>` | navigate
+|  `<C-y>` | accept |
+
 ### Git — vim-fugitive
 
 **From any repo buffer**
@@ -218,6 +224,5 @@ Save **MERGED**, exit with `:qa`; abort with `:cq`.
 | Key | Action |
 |-----|--------|
 | `<Leader>ko` | toggle (`:NeoCodeium! toggle` stops server) |
-| `<M-Tab>` (Alt+Tab) | accept **full** suggestion |
-| `<Tab>` | accept word |
-| `<M-l>` | accept line |
+| `<M-y>` (Alt+y) | accept **full** suggestion |
+| `<C-y>` | accept word |
