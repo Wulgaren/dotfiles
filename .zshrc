@@ -100,8 +100,7 @@ alias dthumbnail='bash ~/Coding/scripts/download/download\ thumbnail.sh'
 alias bluetooth_silence='bash ~/Coding/scripts/misc/bluetoothsilence.sh'
 alias pick='~/Coding/scripts/pick.sh'
 
-alias ai="bash ~/Coding/instant-ai-cli/ask-groq.sh"
-alias ais="bash ~/Coding/instant-ai-cli/ask-cursor.sh"
+alias ai='~/Coding/scripts/ai/instant-ai.sh -g'
 
 alias discordo="$HOME/Coding/discordo-repo/discordo/discordo"
 alias music="~/Coding/Apple-Music-CLI-Player/src/am.sh np -t"
@@ -205,10 +204,10 @@ mega-drive() {
 alias mega-drive-unmount='umount ~/MEGA'
 
 
-# apfel scripts
-alias oneliner='~/Coding/instant-ai-cli/oneliner.sh'
-alias summarize='pbpaste | apfel "summarize in 3 bullets"'
-alias internet_listeners='lsof -iTCP -sTCP:LISTEN -n -P | head -15 | apfel "list which apps own which ports as a table"'
-alias most_cpu_usage='ps aux | sort -k 3 -nr | head -5 | awk '{print $11, $3"%"}' | apfel "which app is using the most CPU"'
+# instant-ai (apfel)
+alias oneliner='~/Coding/scripts/ai/instant-ai.sh oneliner'
+alias summarize='~/Coding/scripts/ai/instant-ai.sh summarize'
+alias internet_listeners='~/Coding/scripts/ai/instant-ai.sh listeners'
+alias most_cpu_usage='~/Coding/scripts/ai/instant-ai.sh cpu'
 
 alias concord='~/Coding/concord/target/release/concord'

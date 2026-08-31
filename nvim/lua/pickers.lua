@@ -143,32 +143,8 @@ end
 
 -- ── Git branches ────────────────────────────────────────────────────────────
 
-local POLISH_ASCII = {
-	["ą"] = "a",
-	["ć"] = "c",
-	["ę"] = "e",
-	["ł"] = "l",
-	["ń"] = "n",
-	["ó"] = "o",
-	["ś"] = "s",
-	["ź"] = "z",
-	["ż"] = "z",
-	["Ą"] = "A",
-	["Ć"] = "C",
-	["Ę"] = "E",
-	["Ł"] = "L",
-	["Ń"] = "N",
-	["Ó"] = "O",
-	["Ś"] = "S",
-	["Ź"] = "Z",
-	["Ż"] = "Z",
-}
-
 local function sanitize_branch(name)
 	local s = vim.trim(name or ""):gsub("%s+", "_")
-	for from, to in pairs(POLISH_ASCII) do
-		s = s:gsub(from, to)
-	end
 	return s
 end
 
