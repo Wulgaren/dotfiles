@@ -49,11 +49,22 @@ local modes = {
 local diag_label = { " ", " ", " ", " " }
 local diag_hl = { "DiagnosticError", "DiagnosticWarn", "DiagnosticInfo", "DiagnosticHint" }
 
+local BRANCH_MAX = 32
+local BRANCH_KEEP = 12
+
+local function trim_branch(name)
+	name = vim.trim(name)
+	if #name <= BRANCH_MAX then
+		return name
+	end
+	return name:sub(1, BRANCH_KEEP) .. "…" .. name:sub(-BRANCH_KEEP)
+end
+
 function _G._statusline()
 	local spec = modes[vim.fn.mode()]
 	local mode = spec and spec[1] or vim.fn.mode():upper()
 	local hl = spec and spec[2] or "StlNormal"
-	local head = vim.fn.FugitiveHead()
+	local head = trim_branch(vim.fn.FugitiveHead())
 	local has_git = head ~= ""
 	local git = has_git and ("%#StlGit# " .. head .. " %#StlGitSep#" .. SEP_R) or ""
 	local root = vim.fn.FugitiveWorkTree()
