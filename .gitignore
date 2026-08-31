@@ -1,3 +1,5 @@
 .gitconfig.local
 .zshrc.local
 nvim-pack-lock.json
+history.jsonl
+.codeium
