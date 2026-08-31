@@ -1,9 +1,6 @@
 vim.keymap.set('n', '<leader>p', '"+p', { silent = true })
 vim.keymap.set('i', '<leader>p', '<C-r>+', { silent = true })
 
-vim.keymap.set('n', '<C-s>', '<cmd>write<CR>', { silent = true })
-vim.keymap.set('i', '<C-s>', '<Esc><cmd>write<CR>a', { silent = true })
-
 -- Insert only: Opt/Alt + Backspace — delete word before cursor (same as i_CTRL-W).
 vim.keymap.set('i', '<M-BS>', '<C-W>', { silent = true })
 
