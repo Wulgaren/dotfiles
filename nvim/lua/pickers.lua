@@ -103,6 +103,8 @@ vim.api.nvim_create_autocmd("FileType", {
 			return
 		end
 		vim.keymap.set("n", "<CR>", open_in_main, { buffer = ev.buf, silent = true })
+		vim.keymap.set("n", "<C-n>", "j", { buffer = ev.buf, silent = true, desc = "Next quickfix item" })
+		vim.keymap.set("n", "<C-p>", "k", { buffer = ev.buf, silent = true, desc = "Previous quickfix item" })
 		vim.api.nvim_create_autocmd("CursorMoved", {
 			group = preview_group,
 			buffer = ev.buf,

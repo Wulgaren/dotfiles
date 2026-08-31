@@ -111,7 +111,7 @@ Non-focused windows use dimmer **NormalNC** so active split stands out.
 | `<Esc>` (Normal) | clear search highlight |
 | `Q` | disabled |
 | `<Leader>sr` | `:substitute` whole buffer / selection |
-| `<Leader>e` | netrw `Lexplore` — see **File explorer** below |
+| `<Leader>e` | netrw `:Explore` - see **File explorer** below |
 | `<C-u>` / `<C-d>` / `<C-f>` / `<C-b>` | scroll, cursor centered |
 | `n` / `N` | next/prev match, cursor centered |
 | Visual `J` / `K` | move selection down/up |
@@ -130,13 +130,13 @@ Non-focused windows use dimmer **NormalNC** so active split stands out.
 | `:MyTips` | open this file below |
 | `:wq` | like `ZZ` (write or prompt, then quit) |
 
-### File explorer (Netrw / `:Lexplore`)
+### File explorer (Netrw / `:Explore`)
 
-Open with `<Leader>e`.
+Open with `<Leader>e` (toggle; press again to return to previous buffer).
 
 | Key | Action |
 |-----|--------|
-| `%` | create **file** (opens in previous window) |
+| `%` | create **file** |
 | `d` | create **folder** (`mkdir`) |
 | `Enter` / `o` | open file or directory |
 | `D` | delete file or directory |
