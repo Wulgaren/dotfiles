@@ -163,6 +163,9 @@ twitter-curator() {
   ~/Coding/PhotoScanner/venv/bin/python3 ~/Coding/PhotoScanner/src/twitter_curator.py --no-listen --hours "${1:-28}"
 }
 
+alias photoscanner='~/Coding/PhotoScanner/photoscanner.sh'
+alias music-catchifier='~/Coding/music-catchifier/music-catchifier.sh'
+
 alias recent-wallpapers='~/Coding/PhotoScanner/venv/bin/python3 ~/Coding/PhotoScanner/src/find_wallpaper.py'
 
 # fzf → vim: current directory
