@@ -25,11 +25,5 @@ vim.keymap.set('n', '<leader>ko', '<cmd>NeoCodeium toggle<CR>', {
   silent = true,
   desc = 'NeoCodeium toggle (no bang; use :NeoCodeium! toggle to halt server)',
 })
-vim.keymap.set('i', '<M-y>', neocodeium.accept, { silent = true, desc = 'NeoCodeium: accept all' })
-vim.keymap.set('i', '<C-y>', function()
-  if neocodeium.visible() then
-    neocodeium.accept_word()
-    return
-  end
-  return '<C-y>'
-end, { expr = true, desc = 'NeoCodeium: accept word' })
+vim.keymap.set('i', '<M-y>', neocodeium.accept_word, { silent = true, desc = 'NeoCodeium: accept word' })
+vim.keymap.set('i', '<M-u>', neocodeium.accept, { silent = true, desc = 'NeoCodeium: accept all' })

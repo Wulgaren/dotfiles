@@ -223,5 +223,5 @@ Save **MERGED**, exit with `:qa`; abort with `:cq`.
 | Key | Action |
 |-----|--------|
 | `<Leader>ko` | toggle (`:NeoCodeium! toggle` stops server) |
-| `<M-y>` (Alt+y) | accept **full** suggestion |
-| `<C-y>` | accept word |
+| `<M-y>` (Alt+y) | accept word |
+| `<M-u>` (Alt+u) | accept **full** suggestion |
