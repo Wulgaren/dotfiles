@@ -21,9 +21,5 @@ neocodeium.setup({
     TelescopePrompt = false,
   },
 })
-vim.keymap.set('n', '<leader>ko', '<cmd>NeoCodeium toggle<CR>', {
-  silent = true,
-  desc = 'NeoCodeium toggle (no bang; use :NeoCodeium! toggle to halt server)',
-})
 vim.keymap.set('i', '<M-y>', neocodeium.accept_word, { silent = true, desc = 'NeoCodeium: accept word' })
 vim.keymap.set('i', '<M-u>', neocodeium.accept, { silent = true, desc = 'NeoCodeium: accept all' })
