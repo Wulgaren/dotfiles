@@ -1,9 +1,8 @@
 local M = {}
 
--- ── Quickfix pickers (preview on cursor, <CR> opens in source window) ───────
+-- ── Quickfix (grep / LSP references): preview on cursor, <CR> opens in source ─
 
 local preview_group = vim.api.nvim_create_augroup("config-qf-preview", { clear = true })
-local term_preview_buf
 local source_win
 
 local function qf_item()
@@ -30,12 +29,7 @@ local function ensure_loaded(bufnr)
 	return bufnr
 end
 
-local function open_in_main()
-	local line, item = qf_item()
-	vim.cmd("silent! pclose | cclose")
-	if not item then
-		return
-	end
+local function restore_source_win()
 	if source_win and vim.api.nvim_win_is_valid(source_win) then
 		vim.api.nvim_set_current_win(source_win)
 	else
@@ -47,26 +41,27 @@ local function open_in_main()
 		end
 	end
 	source_win = nil
+end
+
+local function close_picker()
+	vim.cmd("silent! pclose")
+	vim.cmd("silent! cclose")
+	restore_source_win()
+end
+
+local function open_in_main()
+	local line, item = qf_item()
+	close_picker()
+	if not item then
+		return
+	end
 	if item.bufnr > 0 and vim.api.nvim_buf_is_valid(item.bufnr) then
 		vim.api.nvim_set_current_buf(ensure_loaded(item.bufnr))
-		if vim.bo[item.bufnr].buftype ~= "terminal" then
-			local lnum = math.max(item.lnum or 1, 1)
-			pcall(vim.api.nvim_win_set_cursor, 0, { lnum, math.max((item.col or 1) - 1, 0) })
-		end
+		local lnum = math.max(item.lnum or 1, 1)
+		pcall(vim.api.nvim_win_set_cursor, 0, { lnum, math.max((item.col or 1) - 1, 0) })
 	else
 		vim.cmd(line .. "cc!")
 	end
-end
-
-local function preview_buf(src)
-	if vim.bo[src].buftype ~= "terminal" then
-		return src
-	end
-	if not term_preview_buf or not vim.api.nvim_buf_is_valid(term_preview_buf) then
-		term_preview_buf = vim.api.nvim_create_buf(false, true)
-	end
-	vim.api.nvim_buf_set_lines(term_preview_buf, 0, -1, false, vim.api.nvim_buf_get_lines(src, 0, -1, false))
-	return term_preview_buf
 end
 
 local function preview_item()
@@ -90,11 +85,11 @@ local function preview_item()
 		vim.cmd("silent! pedit")
 		for _, w in ipairs(vim.fn.getwininfo()) do
 			if vim.wo[w.winid].previewwindow then
-				local buf = preview_buf(item.bufnr)
-				vim.api.nvim_win_set_buf(w.winid, buf)
-				local lnum = buf == item.bufnr and math.max(item.lnum or 1, 1) or vim.api.nvim_buf_line_count(buf)
-				local col = buf == item.bufnr and math.max((item.col or 1) - 1, 0) or 0
-				pcall(vim.api.nvim_win_set_cursor, w.winid, { math.max(lnum, 1), col })
+				vim.api.nvim_win_set_buf(w.winid, item.bufnr)
+				pcall(vim.api.nvim_win_set_cursor, w.winid, {
+					math.max(item.lnum or 1, 1),
+					math.max((item.col or 1) - 1, 0),
+				})
 				break
 			end
 		end
@@ -109,7 +104,7 @@ vim.api.nvim_create_autocmd("FileType", {
 			return
 		end
 		vim.keymap.set("n", "<CR>", open_in_main, { buffer = ev.buf, silent = true })
-		vim.keymap.set("n", "<Esc>", "<cmd>silent! pclose | cclose<CR>", { buffer = ev.buf, silent = true })
+		vim.keymap.set("n", "<Esc>", close_picker, { buffer = ev.buf, silent = true, nowait = true, desc = "Close quickfix" })
 		vim.keymap.set("n", "<C-n>", "j", { buffer = ev.buf, silent = true, desc = "Next quickfix item" })
 		vim.keymap.set("n", "<C-p>", "k", { buffer = ev.buf, silent = true, desc = "Previous quickfix item" })
 		vim.api.nvim_create_autocmd("CursorMoved", {
