@@ -61,9 +61,14 @@ local function trim_branch(name)
 end
 
 function _G._statusline()
+	local rec = vim.fn.reg_recording()
 	local spec = modes[vim.fn.mode()]
 	local mode = spec and spec[1] or vim.fn.mode():upper()
 	local hl = spec and spec[2] or "StlNormal"
+	if rec ~= "" then
+		mode = "REC @" .. rec
+		hl = "StlCommand"
+	end
 	local head = trim_branch(vim.fn.FugitiveHead())
 	local has_git = head ~= ""
 	local git = has_git and ("%#StlGit# " .. head .. " %#StlGitSep#" .. SEP_R) or ""
@@ -88,10 +93,18 @@ function _G._statusline()
 		.. diag
 		.. "%#StlRightSep#"
 		.. SEP_L
-		.. "%#StlRight# %{&filetype} %l:%c "
+		.. "%#StlRight# %S %{&filetype} %l:%c "
 end
 
+vim.o.showcmdloc = "statusline"
+
 vim.api.nvim_create_autocmd("DiagnosticChanged", {
+	callback = function()
+		vim.cmd.redrawstatus()
+	end,
+})
+
+vim.api.nvim_create_autocmd({ "RecordingEnter", "RecordingLeave" }, {
 	callback = function()
 		vim.cmd.redrawstatus()
 	end,

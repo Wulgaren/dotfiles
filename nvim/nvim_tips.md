@@ -27,10 +27,12 @@
 | `:g/your_string/d` | delete strings with specific text (:g! - delete ones that don't include the string) |
 | `:w !sudo tee %` | write file with sudo privileges |
 | `C-z / fg` | suspend and go back to Vim |
-| `:dis / register + motion` | check your clipboard and use it |
+| `:dis / register + motion` | check your clipboard and use it, you can yank to register to overwrite macro |
 | `q: / : then C-f` | command-line window (Vim keybinds, history) |
 | `o in visual` | jump between start/end of selection |
 | `d/c/y + / + word` | delete/replace/copy until the searched phrase |
+| `gqq` | split one long line into multiple lines |
+| `q + letter, after done press q, run with @letter` | macro |
 
 ## Change operators
 
