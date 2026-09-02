@@ -12,20 +12,22 @@ I focus on building complex things as simple as possible. I love to find ways to
    - If tests fail because a mock lacks an export: add the export to the mock. Leave the real helper alone.
    Done when you have reused an existing piece or confirmed none exists.
 
-3. **_One path_.** Change the existing path. Remove the old helper, backdrop, global, or branch in the same change. Done when there is a single way to do the thing.
+3. **Tests before code when behaviour changes.** Implementing or refactoring logic, APIs, validation, or transforms: follow the `tdd` skill. Grill what to test (where to call, what to check, what to skip) before any test file. One failing test, minimal code to pass, repeat. Skip for config, wiring, glue, or changes with nothing meaningful to check. After tests are agreed, do not edit them without confirming with the user. Done when focused tests pass and you did not add needless coverage.
 
-4. **_Instrument_ when the cause is unknown.** Add a log or probe, reproduce, read the output, then fix. Revert a speculative rewrite before the next guess. Done when the failing signal is visible, or the fix is the observed cause.
+4. **_One path_.** Change the existing path. Remove the old helper, backdrop, global, or branch in the same change. Done when there is a single way to do the thing.
 
-5. **Smallest diff.** Fix the root cause with the least new code. Extend an existing pattern before adding an abstraction. Done when nothing in the diff is optional for the target.
+5. **_Instrument_ when the cause is unknown.** Add a log or probe, reproduce, read the output, then fix. Revert a speculative rewrite before the next guess. Done when the failing signal is visible, or the fix is the observed cause.
 
-6. **_Exercise_ the path, then check.** Click or run the actual user flow (the widget, the command, the URL). Typecheck is not that step. Then run that repo's usual check (typecheck, lint, test, hooks). Fix what you introduced. If the check was already red from unrelated files, say so and settle scope before expanding. Done when the flow works and the check passes, or you have reported pre-existing red and settled scope.
+6. **Smallest diff.** Fix the root cause with the least new code. Extend an existing pattern before adding an abstraction. Done when nothing in the diff is optional for the target.
+
+7. **_Exercise_ the path, then check.** Click or run the actual user flow (the widget, the command, the URL). Typecheck is not that step. Then run that repo's usual check (typecheck, lint, test, hooks). Fix what you introduced. If the check was already red from unrelated files, say so and settle scope before expanding. Done when the flow works and the check passes, or you have reported pre-existing red and settled scope.
 
 ## Preferences
 
 - **Readable > clever.** Flat functions, explicit names, one obvious path.
 - **Questions are read-only.** When the user asks what, why, or how something works, investigate and answer. Edit only when they ask for a change.
 - **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
-- **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked.
+- **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked. The `tdd` skill lists needless tests (copies the implementation, tests internals, glue with no known right answer) and when to skip test-first entirely.
 - **YAGNI.** Prefer the smallest model that makes the correct behavior unsurprising. When tempted to add abstractions, layers, or speculative machinery, follow the laziness and subtract-before-you-add skills.
 
 ## TypeScript: no `any`
