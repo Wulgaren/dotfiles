@@ -110,30 +110,19 @@ alias mega-upload='_mega_upload_func'
 
 alias iina="/Applications/IINA.app/Contents/MacOS/iina-cli --mpv-af='lavfi=[dynaudnorm=f=250:g=15:p=0.95:r=0.25:m=12]'"
 
-alias bun='npm'
-
 alias clear="clear && printf '\e[3J'"
 
-_nvim_sync_cwd() {
-        [[ -n "$NVIM" ]] || return 0
-        local dir
-        dir=$(pwd)
-        nvim --server "$NVIM" --remote-expr "nvim_set_current_dir('${dir//\'/\\\'}')" >/dev/null 2>&1
-}
-dt() {
-        cd "${DOTFILES_DIR:-$HOME/Coding/.dotfiles}" || return
-        _nvim_sync_cwd
-}
-coding() {
-        cd ~/Coding || return
-        _nvim_sync_cwd
-}
+# Terminal tab/window title = running command (OSC 0; Neovim uses this for :b names)
+autoload -Uz add-zsh-hook
+add-zsh-hook preexec '_term_title_preexec'
+_term_title_preexec() { print -nr -- $'\e]0;'"$1"$'\a' }
+
+alias dt='cd ~/Coding/.dotfiles'
+alias coding='cd ~/Coding'
 
 alias music-backup='~/Coding/scripts/mega/mega-sync-missing.sh'
 
 alias insta-dl="node ~/Coding/insta-downloader/src/fastdl.ts"
-
-#alias agent='safehouse --add-dirs-ro=~/Coding agent'
 
 alias newrepo='bash ~/Coding/scripts/git/newrepo.sh'
 

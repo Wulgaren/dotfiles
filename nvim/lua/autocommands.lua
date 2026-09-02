@@ -31,3 +31,20 @@ vim.api.nvim_create_autocmd("FileType", {
 		end
 	end,
 })
+
+--- Rename :terminal buffers from b:term_title (zsh OSC) so :b can find them by command.
+vim.api.nvim_create_autocmd({ "TermRequest", "TermLeave" }, {
+	callback = function(ev)
+		local buf = ev.buf
+		local title = vim.b[buf].term_title
+		if not title or vim.bo[buf].buftype ~= "terminal" then
+			return
+		end
+		pcall(vim.api.nvim_buf_set_name, buf, title)
+		for _, b in ipairs(vim.api.nvim_list_bufs()) do
+			if vim.api.nvim_buf_is_valid(b) and not vim.bo[b].buflisted and vim.bo[b].buftype == "terminal" then
+				pcall(vim.api.nvim_buf_delete, b, { force = true })
+			end
+		end
+	end,
+})

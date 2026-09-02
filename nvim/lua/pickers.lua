@@ -126,29 +126,6 @@ function M.open(spec)
 	vim.cmd("copen")
 end
 
-function M.buffers()
-	local cur = vim.api.nvim_get_current_buf()
-	local items = {}
-	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buflisted then
-			local name = vim.api.nvim_buf_get_name(buf)
-			local label = name == "" and "[No Name]" or vim.fn.fnamemodify(name, ":~:.")
-			local prefix = buf == cur and "» " or "  "
-			local modified = vim.bo[buf].modified and " [+]" or ""
-			items[#items + 1] = {
-				bufnr = buf,
-				lnum = 1,
-				col = 1,
-				text = prefix .. label .. modified,
-			}
-		end
-	end
-	table.sort(items, function(a, b)
-		return a.text:lower() < b.text:lower()
-	end)
-	M.open({ title = "Buffers", items = items })
-end
-
 -- ── Git branches ────────────────────────────────────────────────────────────
 
 local function sanitize_branch(name)
@@ -223,7 +200,7 @@ end, {
 -- ── Keymaps ─────────────────────────────────────────────────────────────────
 
 vim.keymap.set("n", "<C-h>", "<cmd>marks<CR>", { silent = true, desc = "List marks (:marks)" })
-vim.keymap.set("n", "<C-j>", M.buffers, { silent = true, desc = "Buffer list (qf preview)" })
+vim.keymap.set("n", "<C-j>", ":b ", { desc = "Switch buffer (:b)" })
 vim.keymap.set("n", "<leader>gc", ":GitSwitch ", { silent = false, desc = "Git switch/create branch" })
 
 return M
