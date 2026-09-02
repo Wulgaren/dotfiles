@@ -1,9 +1,10 @@
 local M = {}
 
--- ── Quickfix pickers (preview on cursor, <CR> opens in main window) ─────────
+-- ── Quickfix pickers (preview on cursor, <CR> opens in source window) ───────
 
 local preview_group = vim.api.nvim_create_augroup("config-qf-preview", { clear = true })
 local term_preview_buf
+local source_win
 
 local function qf_item()
 	local line = vim.fn.line(".")
@@ -35,12 +36,17 @@ local function open_in_main()
 	if not item then
 		return
 	end
-	for _, w in ipairs(vim.fn.getwininfo()) do
-		if not is_qf_win(w.winid) and not vim.wo[w.winid].previewwindow then
-			vim.api.nvim_set_current_win(w.winid)
-			break
+	if source_win and vim.api.nvim_win_is_valid(source_win) then
+		vim.api.nvim_set_current_win(source_win)
+	else
+		for _, w in ipairs(vim.fn.getwininfo()) do
+			if not is_qf_win(w.winid) and not vim.wo[w.winid].previewwindow then
+				vim.api.nvim_set_current_win(w.winid)
+				break
+			end
 		end
 	end
+	source_win = nil
 	if item.bufnr > 0 and vim.api.nvim_buf_is_valid(item.bufnr) then
 		vim.api.nvim_set_current_buf(ensure_loaded(item.bufnr))
 		if vim.bo[item.bufnr].buftype ~= "terminal" then
@@ -103,6 +109,7 @@ vim.api.nvim_create_autocmd("FileType", {
 			return
 		end
 		vim.keymap.set("n", "<CR>", open_in_main, { buffer = ev.buf, silent = true })
+		vim.keymap.set("n", "<Esc>", "<cmd>silent! pclose | cclose<CR>", { buffer = ev.buf, silent = true })
 		vim.keymap.set("n", "<C-n>", "j", { buffer = ev.buf, silent = true, desc = "Next quickfix item" })
 		vim.keymap.set("n", "<C-p>", "k", { buffer = ev.buf, silent = true, desc = "Previous quickfix item" })
 		vim.api.nvim_create_autocmd("CursorMoved", {
@@ -114,6 +121,7 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 function M.open(spec)
+	source_win = vim.api.nvim_get_current_win()
 	vim.fn.setqflist({}, "r", spec)
 	vim.cmd("copen")
 end
