@@ -26,8 +26,8 @@ elif [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]]; then
   source <(fzf --zsh)
 fi
 
-export EDITOR=vim
-export VISUAL=vim
+export EDITOR=nvim
+export VISUAL=nvim
 
 # Line editing: emacs keys (C-a/C-e, M-f/M-b, C-k, …). Vi-style: bindkey -v
 bindkey -e
@@ -116,6 +116,10 @@ alias clear="clear && printf '\e[3J'"
 autoload -Uz add-zsh-hook
 add-zsh-hook preexec '_term_title_preexec'
 _term_title_preexec() { print -nr -- $'\e]0;'"$1"$'\a' }
+
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^F' edit-command-line
 
 alias dt='cd ~/Coding/.dotfiles'
 alias coding='cd ~/Coding'

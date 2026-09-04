@@ -33,6 +33,8 @@
 | `d/c/y + / + word` | delete/replace/copy until the searched phrase |
 | `gqq` | split one long line into multiple lines |
 | `q + letter, after done press q, run with @letter` | macro |
+| ` :g/select/norm + type in normal command` | more visual way of doing a macro | 
+| `g + ;/,` | go back or forward through your changes |
 
 ## Change operators
 
@@ -99,6 +101,7 @@
 | `<C-w>v` | split current buffer vertical (left/right) |
 | `<C-w>n` | **new empty buffer**, horizontal split |
 | `<C-w>_` | maximizing vertically |
+| `:windo diffthis` | diffing two splits |
 
 Non-focused windows use dimmer **NormalNC** so active split stands out.
 
