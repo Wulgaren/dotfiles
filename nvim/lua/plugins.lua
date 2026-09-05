@@ -14,14 +14,13 @@ require('ashen').setup({
         force_override = {
             DiffAdd = { "green_light", "g_9" },
             Added = { "green_light", nil },
-            -- Clear popup fills; keep PmenuSel/PmenuThumb so selection stays readable.
             Pmenu = { "g_2" },
             PmenuSbar = { "g_8" },
             WildMenu = { "g_5" },
         },
     },
 })
--- require('catppuccin').setup({ transparent_background = true })
+require('catppuccin').setup({ transparent_background = true })
 require('ashen').load()
 
 vim.api.nvim_create_autocmd('FileType', {
