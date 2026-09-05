@@ -21,8 +21,8 @@ require('ashen').setup({
         },
     },
 })
+-- require('catppuccin').setup({ transparent_background = true })
 require('ashen').load()
-require('catppuccin').setup({ transparent_background = true })
 
 vim.api.nvim_create_autocmd('FileType', {
     callback = function()
