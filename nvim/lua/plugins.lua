@@ -10,6 +10,9 @@ vim.pack.add({
 
 require('ashen').setup({
     transparent = true,
+    plugins = {
+        autoload = false
+    },
     hl = {
         force_override = {
             DiffAdd = { "green_light", "g_9" },
@@ -20,7 +23,7 @@ require('ashen').setup({
         },
     },
 })
-require('catppuccin').setup({ transparent_background = true })
+-- require('catppuccin').setup({ transparent_background = true })
 require('ashen').load()
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -29,18 +32,11 @@ vim.api.nvim_create_autocmd('FileType', {
     end,
 })
 
-require('mason').setup({
-    registries = {
-        'github:mason-org/mason-registry',
-        'github:Crashdummyy/mason-registry',
-    },
-})
 local mason_bin = vim.fn.stdpath('data') .. '/mason/bin'
 vim.env.PATH = mason_bin .. ':' .. vim.env.PATH
 
 -- Manual installs (run once):
--- :MasonInstall bash-language-server css-lsp gopls html-lsp json-lsp lua-language-server python-lsp-server roslyn tailwindcss-language-server taplo typescript-language-server yaml-language-server
--- :lua require('nvim-treesitter').install({ 'bash', 'css', 'go', 'html', 'json', 'lua', 'python', 'c_sharp', 'toml', 'typescript', 'tsx', 'javascript', 'yaml' })
+-- :lua require('mason').setup({ registries = { 'github:mason-org/mason-registry', 'github:Crashdummyy/mason-registry' } }); vim.cmd('MasonInstall bash-language-server css-lsp gopls html-lsp json-lsp lua-language-server python-lsp-server roslyn tailwindcss-language-server taplo typescript-language-server yaml-language-server'); require('nvim-treesitter').install({ 'bash', 'css', 'go', 'html', 'json', 'lua', 'python', 'c_sharp', 'toml', 'typescript', 'tsx', 'javascript', 'yaml' })
 
 local neocodeium = require('neocodeium')
 neocodeium.setup()
