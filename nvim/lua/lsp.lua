@@ -13,6 +13,10 @@ vim.lsp.enable({
 vim.api.nvim_create_autocmd("LspAttach", {
 	callback = function(ev)
 		local client = vim.lsp.get_client_by_id(ev.data.client_id)
+		-- Keep Treesitter colors; semantic tokens were washing params/funcs to grey.
+		if client then
+			client.server_capabilities.semanticTokensProvider = nil
+		end
 		if client and client:supports_method("textDocument/completion") then
 			local provider = client.server_capabilities.completionProvider
 			if provider then

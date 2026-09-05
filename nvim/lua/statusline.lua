@@ -16,7 +16,7 @@ local function apply_segment_hls()
 	end
 	chip("StlNormal", pms.fg)
 	chip("StlInsert", theme_fg("String"))
-	chip("StlVisual", theme_fg("Statement"))
+	chip("StlVisual", theme_fg("AshenBlue"))
 	chip("StlCommand", theme_fg("WarningMsg"))
 	chip("StlReplace", theme_fg("ErrorMsg"))
 	chip("StlTerminal", dir.fg)
