@@ -2,9 +2,10 @@ vim.pack.add({
     'https://github.com/mason-org/mason.nvim',
     'https://github.com/nvim-treesitter/nvim-treesitter',
     'https://github.com/tpope/vim-fugitive',
-    'https://codeberg.org/ficd/ashen.nvim',
     'https://github.com/monkoose/neocodeium',
     'https://github.com/m4xshen/hardtime.nvim',
+    'https://codeberg.org/ficd/ashen.nvim',
+    'https://github.com/catppuccin/nvim'
 }, { confirm = false, load = true })
 
 require('ashen').setup({
@@ -13,10 +14,15 @@ require('ashen').setup({
         force_override = {
             DiffAdd = { "green_light", "g_9" },
             Added = { "green_light", nil },
+            -- Clear popup fills; keep PmenuSel/PmenuThumb so selection stays readable.
+            Pmenu = { "g_2" },
+            PmenuSbar = { "g_8" },
+            WildMenu = { "g_5" },
         },
     },
 })
 require('ashen').load()
+require('catppuccin').setup({ transparent_background = true })
 
 vim.api.nvim_create_autocmd('FileType', {
     callback = function()
