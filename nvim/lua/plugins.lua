@@ -15,7 +15,12 @@ require('ashen').setup({
     },
     hl = {
         force_override = {
-            DiffAdd = { "green_light", "g_9" },
+            DiffAdd = { nil, "green" },
+            DiffDelete = { nil, "red_ashen" },
+            DiffChange = { nil, "g_7" },
+            DiffText = { nil, "blue" },
+            LineNr = { "g_7" },
+            CursorLineNr = { "g_5" },
             Added = { "green_light", nil },
             Pmenu = { "g_2" },
             PmenuSbar = { "g_8" },

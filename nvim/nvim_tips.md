@@ -194,7 +194,7 @@ Open with `<Leader>e` (toggle; press again to return to previous buffer).
 
 | Key | Action |
 |-----|--------|
-| `s` | stage |
+| `s` | stage (visual select for specific ones) |
 | `u` | unstage |
 | `-` | toggle stage/unstage |
 | `U` | unstage all |
