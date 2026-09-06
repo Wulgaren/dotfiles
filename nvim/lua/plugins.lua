@@ -19,6 +19,7 @@ require('ashen').setup({
             DiffDelete = { nil, "red_ashen" },
             DiffChange = { nil, "g_7" },
             DiffText = { nil, "blue" },
+            Directory = { "green_light" },
             LineNr = { "g_7" },
             CursorLineNr = { "g_5" },
             Added = { "green_light", nil },
