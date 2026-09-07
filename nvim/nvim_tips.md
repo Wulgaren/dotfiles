@@ -147,6 +147,7 @@ Open with `<Leader>e` (toggle; press again to return to previous buffer).
 | `R` | rename |
 | `-` | go up one directory |
 | `lcd %` | set current path in Vim |
+| `qf` | show properties of file, full path, etc. |
 
 ### find / grep / pickers
 
@@ -230,3 +231,9 @@ Save **MERGED**, exit with `:qa`; abort with `:cq`.
 | `:NeoCodeium! toggle` | stops NeoCodeium server |
 | `<M-y>` (Alt+y) | accept word |
 | `<M-u>` (Alt+u) | accept **full** suggestion |
+
+### Make
+
+Example:
+`set makeprg=c3c\ compile\ %`
+`make`

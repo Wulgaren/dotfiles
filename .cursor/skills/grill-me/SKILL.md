@@ -13,30 +13,18 @@ Work the tree in **rounds**. The **frontier** is every decision whose prerequisi
 
 ### Presenting questions
 
-Call `AskQuestion` the same way you call `Read`: it is already in the available tools list. Use it whenever questions have discrete options. Put your recommended answer as the first option with "(Recommended)" appended. Group all frontier questions into a single `AskQuestion` call when possible (multiple pages).
+Write the frontier as plain markdown in the reply. Never wrap questions in fenced code blocks (markdown inside fences is not rendered). Number each question. For discrete choices, letter the options and put your pick first with `(Recommended)`:
 
-`AskQuestion` is a first-class tool. Invoke it directly. It is not in the `cursor` namespace and is not found via MCP or dynamic-tool discovery.
+1. **<question title>**
+   - A) <observable outcome> (Recommended)
+   - B) <observable outcome>
+   - C) Something else
 
-Required payload — `title` alone is invalid; every question needs `id`, `prompt`, and `options` with `id` / `label`:
+2. **<next question>**
+   - A) <observable outcome> (Recommended)
+   - B) <observable outcome>
 
-```
-AskQuestion({
-  title: "Short topic",
-  questions: [
-    {
-      id: "primary",
-      prompt: "What should this control do?",
-      options: [
-        { id: "a", label: "Observable outcome A (Recommended)" },
-        { id: "b", label: "Observable outcome B" },
-        { id: "other", label: "Something else" }
-      ]
-    }
-  ]
-})
-```
-
-On error, fix the payload and call `AskQuestion` again in the same turn. Paste numbered options as chat text only when `AskQuestion` is missing from the available tools list after a correct call.
+Open-ended questions skip the lettered list and state the recommendation in one short line under the question.
 
 Each round the user answers reshapes the tree — settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 
@@ -48,7 +36,7 @@ Multiple-choice options must pass the **plain-difference test**: someone who doe
 
 - Frame options as **product / UX / policy outcomes**, not wiring, algorithms, layout engineering, or skeleton/placeholder mechanics.
 - Lead each option with the observable difference. Put implementation detail only after that, and only if it helps.
-- If two options would feel the same to the user, or only differ by implementer taste → **do not ask**. Pick one, put it in the ➡️ recommendation, continue.
+- If two options would feel the same to the user, or only differ by implementer taste → **do not ask**. Pick one, mark it `(Recommended)`, continue.
 - If the option set is more technical than the real decision, collapse it to the simpler question the user can actually answer.
 
 **Bad** (opaque interleave mechanics): A) round-robin without Google → Marginalia/Wiby → Brave → Tavily. B) four-way interleave. C) commercial block then non-commercial block.
