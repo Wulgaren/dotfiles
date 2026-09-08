@@ -89,4 +89,20 @@ Workflow and tooling notes that transfer across projects. Project-specific bug f
 
 ---
 
+## 2. `comm` needs the same collation as the sort
+
+**Struggle:** Lists sorted with Python (`list.sort` / `sorted`) then compared with `comm` report false misses. Paths that exist in both sets still show up in `comm -23`.
+
+**Resolution:** NFC-normalize if needed, then `LC_ALL=C sort -u` on both sides and `LC_ALL=C comm`. Never mix Python’s default sort with locale `comm`.
+
+---
+
+## 3. MEGAcmd `mega-put` dest path can become a file
+
+**Struggle:** `mega-put -c localfile Music/Artist/Album` prints OK, but later diffs still miss the track. On MEGA, `Album` (or even `Artist`) is a single file blob, not a folder of tracks.
+
+**Resolution:** `mega-mkdir -p` the destination folder first (replace any file-node at that path / parents), then `mega-put localfile dest/`. Detect file-vs-dir with `mega-find path --type=f` / `--type=d` matching the path exactly, not by parsing `mega-ls -l` headers.
+
+---
+
 *Add an entry here only when the struggle and fix would help in an unrelated repo. Otherwise use the project's own AGENT.md, or skip.*
