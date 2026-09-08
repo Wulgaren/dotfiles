@@ -49,7 +49,7 @@ Not sure if testing is worth it? Run one grill-me round: "is this worth a test?"
 
 7. **Run the flow and checks.** Exercise the real user path. Run the repo's normal checks (typecheck, lint, test). Done when both pass.
 
-Do refactoring in a separate pass or review, not squeezed into step 4.
+Do refactoring in a separate pass via the `cleanup` skill, not squeezed into step 4. After step 7 is green, follow `cleanup` (it asks the user before editing).
 
 ## Tests you should not add
 
@@ -81,4 +81,4 @@ Do not add tests that do not prove this change.
 
 ## Done when
 
-You agreed where to test, each agreed behaviour has a passing focused test (or was skipped on purpose), production code passes them, you did not edit tests after agreement without confirming, and the user flow plus repo checks pass.
+You agreed where to test, each agreed behaviour has a passing focused test (or was skipped on purpose), production code passes them, you did not edit tests after agreement without confirming, the user flow plus repo checks pass, and you handed off to `cleanup` (or the user declined).

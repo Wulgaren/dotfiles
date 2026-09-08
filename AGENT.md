@@ -22,6 +22,8 @@ I focus on building complex things as simple as possible. I love to find ways to
 
 7. **_Exercise_ the path, then check.** Click or run the actual user flow (the widget, the command, the URL). Typecheck is not that step. Then run that repo's usual check (typecheck, lint, test, hooks). Fix what you introduced. If the check was already red from unrelated files, say so and settle scope before expanding. Done when the flow works and the check passes, or you have reported pre-existing red and settled scope.
 
+8. **_Cleanup_ after green.** When the flow and checks pass, follow the `cleanup` skill: ask the user if everything is working; only then remove redundancy and dead paths in this change's blast radius. Done when cleanup finished or the user declined.
+
 ## Preferences
 
 - **Readable > clever.** Flat functions, explicit names, one obvious path.
