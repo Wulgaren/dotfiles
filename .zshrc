@@ -125,6 +125,7 @@ alias dt='cd ~/Coding/.dotfiles'
 alias coding='cd ~/Coding'
 
 alias music-backup='~/Coding/scripts/mega/mega-sync-missing.sh'
+alias mega-search='~/Coding/scripts/mega/mega-search.sh'
 
 alias insta-dl="node ~/Coding/insta-downloader/src/fastdl.ts"
 
