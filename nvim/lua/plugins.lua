@@ -26,6 +26,8 @@ require('ashen').setup({
             Pmenu = { "g_2" },
             PmenuSbar = { "g_8" },
             WildMenu = { "g_5" },
+            WinSeparator = { "g_7", nil },
+            VertSplit = { "g_7", nil },
         },
     },
 })
