@@ -15,12 +15,12 @@ require('ashen').setup({
     },
     hl = {
         force_override = {
-            DiffAdd = { nil, "green" },
-            DiffDelete = { nil, "red_ashen" },
-            DiffChange = { nil, "g_7" },
-            DiffText = { nil, "blue" },
+            DiffAdd = { nil, "#14231E" },
+            DiffDelete = { nil, "#2E1B1B" },
+            DiffChange = { nil, "#161A1A" },
+            DiffText = { nil, "g_8" },
             Directory = { "green_light" },
-            LineNr = { "g_7" },
+            LineNr = { "g_6" },
             CursorLineNr = { "g_5" },
             Added = { "green_light", nil },
             Pmenu = { "g_2" },

@@ -167,6 +167,7 @@ Open with `<Leader>e` (toggle; press again to return to previous buffer).
 | `grn` | rename |
 | `gra` | code actions |
 | `gO` | document symbols |
+| `gri` | implementation |
 | `<Leader>f` | format buffer / selection |
 | `<Leader>d` | buffer diagnostics |
 
