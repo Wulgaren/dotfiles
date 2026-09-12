@@ -1,4 +1,4 @@
-alt - 1 : open -a Safari
+alt - 1 : open -a Helium
 
 alt - return : osascript \
     -e 'tell application "Terminal"' \
