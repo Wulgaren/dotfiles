@@ -31,9 +31,6 @@ set linebreak
 set laststatus=2
 set re=0
 
-if exists('+termguicolors')
-  set termguicolors
-endif
 if exists('+signcolumn')
   set signcolumn=yes
 endif

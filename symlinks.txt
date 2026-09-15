@@ -53,3 +53,4 @@ link zsh/windows/wmux-ssh.zsh win:~/.zsh/wmux-ssh.zsh
 
 # notes (printed on sync)
 note qutebrowser git clone https://github.com/catppuccin/qutebrowser.git qutebrowser/catppuccin
+link skhd ~/.config/skhd

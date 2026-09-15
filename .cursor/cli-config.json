@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Shell(ls)",
+      "Shell(git rev-parse)",
       "Shell(nvim)",
       "Shell(echo)",
       "Shell(cd)",

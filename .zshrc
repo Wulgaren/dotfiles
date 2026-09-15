@@ -208,3 +208,4 @@ alias internet_listeners='~/Coding/scripts/ai/instant-ai.sh listeners'
 alias most_cpu_usage='~/Coding/scripts/ai/instant-ai.sh cpu'
 
 alias concord='~/Coding/concord/target/release/concord'
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"

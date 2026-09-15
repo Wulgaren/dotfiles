@@ -1,17 +1,9 @@
-alt - 1 : open -a Helium
+alt - 1 : osascript ~/.config/skhd/open-helium.scpt
 
-alt - return : osascript \
-    -e 'tell application "Terminal"' \
-    -e 'if (count of windows) is 0 then do script ""' \
-    -e 'activate' \
-    -e 'end tell'
-alt - 2 : osascript \
-    -e 'tell application "Terminal"' \
-    -e 'if (count of windows) is 0 then do script ""' \
-    -e 'activate' \
-    -e 'end tell'
+alt - return : osascript ~/.config/skhd/open-terminal.scpt
+alt - 2 : osascript ~/.config/skhd/open-terminal.scpt
 
-alt - 3 : open -a "Discord"
+alt - 3 : osascript ~/.config/skhd/open-discord-helium.scpt
 alt - 4 : open -a Music
 alt - 5 : open -a Finder
 alt - 6 : open -a Photos
