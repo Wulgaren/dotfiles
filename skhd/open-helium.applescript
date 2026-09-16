@@ -5,7 +5,7 @@ tell application "Helium"
 		return
 	end if
 
-	-- Already on the non-Discord window: just foreground Helium.
+	-- Already on a non-Discord tab: just foreground Helium.
 	try
 		if (URL of active tab of front window as text) does not contain "discord.com" then
 			activate
@@ -13,7 +13,9 @@ tell application "Helium"
 		end if
 	end try
 
-	repeat with w in windows
+	-- Prefer a window whose active tab is already non-Discord; never switch tabs.
+	repeat with wi from 1 to (count of windows)
+		set w to window wi
 		try
 			if (URL of active tab of w as text) does not contain "discord.com" then
 				set index of w to 1

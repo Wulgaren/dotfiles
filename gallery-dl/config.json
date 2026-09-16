@@ -6,7 +6,7 @@
         "skip": "true",
         "filename": "{user[name]|user|username|pinner[username]}_{filename|media_id|id}.{extension}",
         "tiktok": {
-            "filename": "{user}_{id}.{extension}"
+            "filename": "{user}_{id}{num:?_//}.{extension}"
         },
         "twitter": {
             "cards": "ytdl"
