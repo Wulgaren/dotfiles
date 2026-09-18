@@ -1,9 +1,9 @@
-alt - 1 : osascript ~/.config/skhd/open-helium.scpt
+alt - 1 : open -a Helium
 
 alt - return : osascript ~/.config/skhd/open-terminal.scpt
 alt - 2 : osascript ~/.config/skhd/open-terminal.scpt
 
-alt - 3 : osascript ~/.config/skhd/open-discord-helium.scpt
+alt - 3 : open -a "Discord Helium"
 alt - 4 : open -a Music
 alt - 5 : open -a Finder
 alt - 6 : open -a Photos
