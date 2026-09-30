@@ -4,6 +4,7 @@
       "Shell(ls)",
       "Shell(git rev-parse)",
       "Shell(nvim)",
+      "Shell(npm run ts-check)",
       "Shell(echo)",
       "Shell(cd)",
       "Shell(git show)",
