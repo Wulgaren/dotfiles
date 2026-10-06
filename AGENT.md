@@ -12,7 +12,7 @@ I focus on building complex things as simple as possible. I love to find ways to
    - If tests fail because a mock lacks an export: add the export to the mock. Leave the real helper alone.
    Done when you have reused an existing piece or confirmed none exists.
 
-3. **Tests before code when behaviour changes.** Implementing or refactoring logic, APIs, validation, or transforms: follow the `tdd` skill. Grill what to test (where to call, what to check, what to skip) before any test file. One failing test, minimal code to pass, repeat. Skip for config, wiring, glue, or changes with nothing meaningful to check. After tests are agreed, do not edit them without confirming with the user. Done when focused tests pass and you did not add needless coverage.
+3. **Tests before code when behaviour changes.** Implementing or refactoring logic, APIs, validation, or transforms: follow the `tdd` skill. If the repo has no test suite, skip tests and do not ask about them. Otherwise grill what to test (where to call, what to check, what to skip) before any test file. One failing test, minimal code to pass, repeat. Skip for config, wiring, glue, or changes with nothing meaningful to check. After tests are agreed, do not edit them without confirming with the user. Done when focused tests pass and you did not add needless coverage, or when you skipped because there is no suite.
 
 4. **_One path_.** Change the existing path. Remove the old helper, backdrop, global, or branch in the same change. Done when there is a single way to do the thing.
 

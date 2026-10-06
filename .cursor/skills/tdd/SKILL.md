@@ -23,13 +23,14 @@ Prove the change. Do not pad the suite. See AGENT.md **Focused tests**.
 | Refactor that must not change what users see | Yes (capture current behaviour in tests first) |
 | Config, env vars, wiring, type-only edits, plain CRUD pass-through | No |
 | No way to know the right answer except copying the code | No (the test would be useless) |
+| Repo has no test suite (no test runner, no `*.test.*` / `*_test.*` / spec files, nothing in package scripts or CI that runs tests) | No — implement without tests; do not ask about them |
 | Browser / Playwright / full-app tests | Only if grill-me settled on it, or the user asked |
 
-Not sure if testing is worth it? Run one grill-me round: "is this worth a test?" with what the user would see or get, not internal labels.
+Not sure if testing is worth it? Only if the repo already has tests: run one grill-me round ("is this worth a test?") with what the user would see or get, not internal labels. No existing suite → skip that question and ship without tests.
 
 ## Steps
 
-1. **Grill what to test.** Before creating any test file, run grill-me on open test questions:
+1. **Grill what to test.** Skip this step (and step 2) when the repo has no tests — go straight to implementing, no grill-me about testing. Otherwise, before creating any test file, run grill-me on open test questions:
    - Where will the test call in? (the public function, HTTP handler, component prop, CLI command, not private helpers inside)
    - What should the user or caller actually get? (outcomes, not "this internal function was called")
    - Where does the expected answer come from? (spec, a hand-worked example, a fixed literal, not running the same logic as the code under test)
@@ -81,4 +82,4 @@ Do not add tests that do not prove this change.
 
 ## Done when
 
-You agreed where to test, each agreed behaviour has a passing focused test (or was skipped on purpose), production code passes them, you did not edit tests after agreement without confirming, the user flow plus repo checks pass, and you handed off to `cleanup` (or the user declined).
+No test suite in the repo: you shipped without tests and never asked about them. Otherwise: you agreed where to test, each agreed behaviour has a passing focused test (or was skipped on purpose), production code passes them, you did not edit tests after agreement without confirming, the user flow plus repo checks pass, and you handed off to `cleanup` (or the user declined).
