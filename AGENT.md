@@ -20,9 +20,9 @@ I focus on building complex things as simple as possible. I love to find ways to
 
 6. **Smallest diff.** Fix the root cause with the least new code. Extend an existing pattern before adding an abstraction. Done when nothing in the diff is optional for the target.
 
-7. **_Exercise_ the path, then check.** Click or run the actual user flow (the widget, the command, the URL). Typecheck is not that step. Then run that repo's usual check (typecheck, lint, test, hooks). Fix what you introduced. If the check was already red from unrelated files, say so and settle scope before expanding. Done when the flow works and the check passes, or you have reported pre-existing red and settled scope.
+7. **_Exercise_ the path, then _build_.** Click or run the actual user flow (the widget, the command, the URL). Typecheck alone is not that step. Then run a production-style build when the repo has one (`npm run build`, `cargo build`, `go build`, and so on). `ts-check`, typecheck, lint, and unit tests alone do not satisfy this step when a production build exists. If none exists, run the repo's usual gate (typecheck, lint, test, hooks) and say there was no build script. Fix what you introduced. If the check was already red from unrelated files, say so and settle scope before expanding. Hand control back for the user to test only after the build (or fallback gate) passes. A user-level `stop` hook will auto-continue you if you skip it after code edits. Done when the flow works and the build or gate passes, or you have reported pre-existing red and settled scope.
 
-8. **_Cleanup_ after green.** When the flow and checks pass, follow the `cleanup` skill: ask the user if everything is working; only then remove redundancy and dead paths in this change's blast radius. Done when cleanup finished or the user declined.
+8. **_Cleanup_ after green.** When the flow and build (or fallback gate) pass, follow the `cleanup` skill: ask the user if everything is working; only then remove redundancy and dead paths in this change's blast radius. Done when cleanup finished or the user declined.
 
 ## Preferences
 

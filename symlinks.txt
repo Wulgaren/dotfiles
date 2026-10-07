@@ -41,6 +41,8 @@ link .cursor/rules ~/.cursor/rules
 link .cursor/skills ~/.cursor/skills
 link .cursor/skills ~/.agents/skills
 link .cursor/cli-config.json ~/.cursor/cli-config.json
+link .cursor/hooks.json ~/.cursor/hooks.json
+link .cursor/hooks ~/.cursor/hooks
 link AGENT.md ~/.agents/AGENT.md
 link AGENT.md ~/.codex/AGENTS.md
 

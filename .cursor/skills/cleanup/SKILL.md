@@ -25,8 +25,8 @@ Apply `principle-laziness-protocol` and `principle-subtract-before-you-add` whil
 
 5. **One path.** One way to do each thing the change owns. No parallel old/new APIs left "just in case." Done when callers use a single path.
 
-6. **Re-prove green.** Re-run the user flow you already exercised and the repo's usual checks. Fix only what cleanup broke. Done when both pass.
+6. **Re-prove green.** Re-run the user flow you already exercised. Then run the same production-style build used at handoff (or the usual gate if there is no build script, and say so). Typecheck or unit tests alone do not replace a production build when one exists. Fix only what cleanup broke. Done when both pass.
 
 ## Done when
 
-User confirmed it was working, the radius shrank or stayed flat with no new abstractions, sound existing pieces were reused, one path remains, and checks are still green.
+User confirmed it was working, the radius shrank or stayed flat with no new abstractions, sound existing pieces were reused, one path remains, and the build or fallback gate is still green.
