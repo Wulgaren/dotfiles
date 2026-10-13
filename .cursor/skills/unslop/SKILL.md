@@ -5,7 +5,7 @@ description: Cut AI tells from any writing. Must always apply.
 
 # Unslop
 
-Edit text to remove AI patterns and add human voice.
+Edit text to remove AI patterns and add human voice. Prefer ASD-STE100 (Simplified Technical English) phrasing when it makes the writing clearer; keep voice and soul primary when they conflict.
 
 ## Process
 

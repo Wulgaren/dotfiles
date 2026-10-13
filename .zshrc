@@ -209,3 +209,5 @@ alias most_cpu_usage='~/Coding/scripts/ai/instant-ai.sh cpu'
 
 alias concord='~/Coding/concord/target/release/concord'
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+
+alias music-tags='~/Coding/music-tags/music_tags.py'

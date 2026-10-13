@@ -50,7 +50,7 @@ Not sure if testing is worth it? Only if the repo already has tests: run one gri
 
 7. **Run the flow and checks.** Exercise the real user path. Run the repo's normal checks (typecheck, lint, test). Done when both pass.
 
-Do refactoring in a separate pass via the `cleanup` skill, not squeezed into step 4. After step 7 is green, follow `cleanup` (it asks the user before editing).
+Do refactoring in a separate pass via the `cleanup` skill, not squeezed into step 4. After step 7 is green, follow `cleanup` before handoff.
 
 ## Tests you should not add
 
@@ -82,4 +82,4 @@ Do not add tests that do not prove this change.
 
 ## Done when
 
-No test suite in the repo: you shipped without tests and never asked about them. Otherwise: you agreed where to test, each agreed behaviour has a passing focused test (or was skipped on purpose), production code passes them, you did not edit tests after agreement without confirming, the user flow plus repo checks pass, and you handed off to `cleanup` (or the user declined).
+No test suite in the repo: you shipped without tests and never asked about them. Otherwise: you agreed where to test, each agreed behaviour has a passing focused test (or was skipped on purpose), production code passes them, you did not edit tests after agreement without confirming, the user flow plus repo checks pass, and you followed `cleanup` before handoff (or skipped because this turn had no code edits).
