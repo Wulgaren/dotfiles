@@ -211,3 +211,4 @@ alias concord='~/Coding/concord/target/release/concord'
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 
 alias music-tags='~/Coding/music-tags/music_tags.py'
+alias dp='dphoto'
