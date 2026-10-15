@@ -72,7 +72,9 @@ home_form() {
 ask_overwrite() {
   local path="$1"
   local reply
-  read -r -p "Replace $path? [y/N] " reply
+  # Read from the tty, not stdin: cmd_sync's loop feeds on a list_entries pipe,
+  # and a bare read would swallow the next entry.
+  read -r -p "Replace $path? [y/N] " reply < /dev/tty || return 1
   [[ "$reply" =~ ^[Yy]$ ]]
 }
 
