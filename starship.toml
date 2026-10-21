@@ -1,0 +1,29 @@
+# Prevent slow git (e.g. big repos, network) from blocking the prompt
+command_timeout = 1000
+
+[aws]
+disabled = true
+
+[package]
+disabled = true
+
+[gcloud]
+disabled = true
+
+[azure]
+disabled = true
+
+[nodejs]
+disabled = false
+
+[character]
+success_symbol = '[➜](bold green)'
+
+[cmd_duration]
+min_time = 500
+format = ' [$duration](bold yellow)'
+
+[directory]
+truncation_length = 255
+truncate_to_repo = false
+use_logical_path = false

@@ -1,0 +1,126 @@
+{
+  "name": "terminal",
+  "editor": {
+    "bg": "Default",
+    "line_number_bg": "Default",
+    "current_line_bg": "Default",
+    "fg": [
+      198,
+      208,
+      245
+    ],
+    "cursor": [
+      140,
+      170,
+      238
+    ],
+    "selection_bg": [
+      197,
+      207,
+      240
+    ]
+  },
+  "syntax": {
+    "keyword": [
+      244,
+      184,
+      228
+    ],
+    "string": [
+      166,
+      209,
+      137
+    ],
+    "comment": [
+      197,
+      207,
+      240
+    ]
+  },
+  "diagnostic": {
+    "error_fg": [
+      231,
+      130,
+      132
+    ],
+    "error_bg": [
+      231,
+      130,
+      132
+    ],
+    "warning_fg": [
+      229,
+      200,
+      144
+    ],
+    "warning_bg": [
+      229,
+      200,
+      144
+    ],
+    "hint_fg": [
+      129,
+      200,
+      190
+    ],
+    "hint_bg": [
+      129,
+      200,
+      190
+    ],
+    "info_fg": [
+      140,
+      170,
+      238
+    ],
+    "info_bg": [
+      140,
+      170,
+      238
+    ]
+  },
+  "search": {
+    "match_bg": [
+      229,
+      200,
+      144
+    ],
+    "match_fg": [
+      81,
+      87,
+      109
+    ]
+  },
+  "ui": {
+    "tab_active_bg": [
+      48,
+      52,
+      70
+    ],
+    "tab_active_fg": [
+      198,
+      208,
+      245
+    ],
+    "tab_inactive_bg": [
+      81,
+      87,
+      109
+    ],
+    "tab_inactive_fg": [
+      197,
+      207,
+      240
+    ],
+    "status_bar_bg": [
+      81,
+      87,
+      109
+    ],
+    "status_bar_fg": [
+      197,
+      207,
+      240
+    ]
+  }
+}

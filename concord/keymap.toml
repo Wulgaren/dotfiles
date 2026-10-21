@@ -1,0 +1,9 @@
+[keymap.composer]
+MoveCursorWordLeft = { keys = ["<A-left>", "<C-left>"] }
+MoveCursorWordRight = { keys = ["<A-right>", "<C-right>"] }
+DeletePreviousWord = { keys = ["<A-backspace>", "<C-backspace>", "<C-w>"] }
+
+[keymap]
+ReactMessage = "b"
+ReplyMessage = "r"
+QuickReactMessage = "n"

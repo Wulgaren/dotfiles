@@ -1,0 +1,17 @@
+auto_focus = true
+# sh -c does not load zsh aliases; use the real binary name (vim -> nvim alias won't apply).
+editor = "nvim"
+
+[notifications]
+enabled = true
+# The duration of the sound. Set the value to `0` to use default duration. This is only supported on Unix and Windows.
+duration = 0
+[notifications.sound]
+enabled = true	
+only_on_ping = false
+
+[keybinds]
+quit = "ctrl+q"
+
+[keybinds.composer]
+open_file_picker = "ctrl+o"

@@ -1,0 +1,85 @@
+[user]
+	name = Wulgaren
+	email = natios100@gmail.com
+[core]
+	editor = vim	
+	pager = delta
+
+	fsmonitor = true
+	untrackedCache = true
+    
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true    # use n and N to move between diff sections
+
+    # delta detects terminal colors automatically; set one of these to disable auto-detection
+    # dark = true
+    # light = true
+
+[merge]
+	conflictstyle = zdiff3
+	tool = nvimdiff
+
+[alias]
+	aliases = "!f() { git config --global -l | grep alias | sort; }; f"
+	log-commit = log -1 --pretty=format:'commit: %C(bold red)%h%Creset %C(red)<%H>%Creset %C(bold magenta)%d %Creset%ndate: %C(bold yellow)%cd %Creset%C(yellow)%cr%Creset%nauthor: %C(bold blue)%an%Creset %C(blue)<%ae>%Creset%n%n%C(bold cyan)%s%n%n%C(cyan)%b%n%Creset'
+	purge = clean -fd
+	nuke = reset --hard
+	cleanup = !git clean -fd && git reset --hard
+	revertfile = checkout --
+	unstage = reset HEAD --
+	uncommit = reset --soft HEAD^
+	prev = "!f() { git log -p -1 | less -R; }; f"
+	branchclean = git branch --merged origin/main | grep -vE \"^\\s*(\\*|main|develop)\" | xargs -n 1 git branch -d
+	prevdiff = diff HEAD~1
+
+[pager]
+	log = true
+[push]
+	autoSetupRemote = true
+	default = simple
+	followTags = true
+[init]
+	defaultBranch = main
+[column]
+	ui = auto
+[branch]
+	sort = -committerdate
+[tag]
+	sort = version:refname
+[diff]
+	algorithm = histogram
+	colorMoved = plain
+	mnemonicPrefix = true
+	renames = true
+[fetch]
+	prune = true
+	pruneTags = true
+	all = true
+[help]
+	autocorrect = prompt
+[commit]
+	verbose = true
+[rerere]
+	enabled = false
+	autoupdate = true
+[rebase]
+	autoSquash = true
+	autoStash = true
+	updateRefs = true
+[pull]
+	rebase = true
+[mergetool "nvimdiff"]
+	cmd = nvim -f -d \"$LOCAL\" \"$BASE\" \"$REMOTE\" \"$MERGED\" -c \"wincmd w\" -c \"wincmd w\" -c \"wincmd w\" -c \"wincmd J\" -c \"wincmd =\"
+	layout = LOCAL,BASE,REMOTE / MERGED
+[mergetool]
+	prompt = false
+	keepBackup = false
+[credential "https://github.com"]
+	helper = 
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !gh auth git-credential

@@ -1,0 +1,22 @@
+theme = dark:Catppuccin Frappe,light:Catppuccin Latte
+
+# Padding (points)
+window-padding-x = 12
+window-padding-y = 12
+
+# Transparency (0.0 = fully transparent, 1.0 = opaque)
+# macOS: requires a full Ghostty restart to take effect
+background-opacity = 0.90
+background-blur = true
+
+# Disable terminal bell sounds (system alert + custom audio)
+bell-features = no-system,no-audio
+
+custom-shader = shaders/ghostty-cursor-shaders/cursor_warp.glsl
+custom-shader-animation = always
+
+# Let apps see real Option/Alt chords (Concord, etc.)
+# Default macOS "natural text editing" rewrites these to ESC b / ESC f.
+keybind = alt+left=unbind
+keybind = alt+right=unbind
+keybind = option+backspace=text:\x1b\x7f

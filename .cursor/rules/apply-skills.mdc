@@ -1,0 +1,7 @@
+---
+name: apply-skills
+description: Read and follow skills that must always apply.
+alwaysApply: true
+---
+
+Before responding, check the available skills list. Any skill whose description says "must always apply" or equivalent: read it and follow it for this response. Do this every turn.

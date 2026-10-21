@@ -1,0 +1,42 @@
+[display]
+disable_image_preview = false
+show_avatars = true
+show_images = true
+media_playback = true
+image_preview_quality = "balanced"
+attachment_viewer_quality = "original"
+image_protocol = "auto"
+show_custom_emoji = true
+circular_avatars = false
+hour_format_24 = true
+
+[composer]
+emojis_as_links = false
+ping_on_reply = true
+
+[credentials]
+store = "auto"
+
+[notifications]
+desktop_notifications = true
+notification_sound = "~/Coding/.dotfiles/concord/sound.wav"
+voice_join_sound = "~/Coding/.dotfiles/concord/silence.wav"
+voice_leave_sound = "~/Coding/.dotfiles/concord/silence.wav"
+
+[voice]
+self_mute = false
+self_deaf = false
+input_source = "coreaudio:BuiltInMicrophoneDevice"
+allow_microphone_transmit = true
+push_to_talk = false
+push_to_talk_shortcut = "F8"
+noise_suppression = true
+microphone_sensitivity = -35
+microphone_volume = 100
+voice_output_volume = 136
+
+[presence]
+share_rich_presence = true
+
+[reactions]
+favorite_emojis = ["💚","🥺","😭","🤣","🔥","🫂","🙏","🥲","🤐","😖"]
