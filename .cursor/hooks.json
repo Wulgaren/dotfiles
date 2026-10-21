@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "node ./hooks/verify-handoff.mjs"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node ./hooks/verify-handoff.mjs",
+        "matcher": "Shell"
+      }
+    ],
+    "stop": [
+      {
+        "command": "node ./hooks/verify-handoff.mjs",
+        "loop_limit": 3
+      }
+    ]
+  }
+}

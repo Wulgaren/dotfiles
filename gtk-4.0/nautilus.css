@@ -1,0 +1,33 @@
+/* Transparent Nautilus chrome so Hyprland blur shows through.
+   Keep icons/text solid (hypr opacity 1.0 override). */
+.nautilus-window,
+.nautilus-window.background {
+  background-color: alpha(@window_bg_color, 0.50);
+}
+
+.nautilus-window toolbarview,
+.nautilus-window .content-pane,
+.nautilus-window overlaysplitview {
+  background-color: transparent;
+}
+
+.nautilus-window .sidebar-pane,
+.nautilus-window .navigation-sidebar,
+.nautilus-window placessidebar {
+  background-color: alpha(@sidebar_bg_color, 0.70);
+}
+
+.nautilus-window headerbar,
+.nautilus-window .top-bar,
+.nautilus-window searchbar {
+  background-color: alpha(@headerbar_bg_color, 0.55);
+  background-image: none;
+}
+
+.nautilus-window .view,
+.nautilus-window listview,
+.nautilus-window gridview,
+.nautilus-window .nautilus-list-view,
+.nautilus-window .nautilus-grid-view {
+  background-color: transparent;
+}

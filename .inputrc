@@ -1,0 +1,2 @@
+# Readline (python, psql, etc.): emacs line editing, not vi.
+set editing-mode emacs

@@ -1,0 +1,7 @@
+---
+name: apply-skills
+description: Read and follow skills that must always apply.
+alwaysApply: true
+---
+
+Before responding, check the available skills list. Always read and follow the unslop skill. Also read and follow any other skill whose description says "must always apply" or equivalent. Do this every turn.

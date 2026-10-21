@@ -1,0 +1,257 @@
+# Place this at ~/.aerospace.toml
+config-version = 2
+
+# ---------------------------
+# Startup commands
+# ---------------------------
+after-startup-command = [
+ # 'exec-and-forget borders active_color=0xffe1e3e4 inactive_color=0xff494d64 width=5.0'
+]
+
+start-at-login = false
+
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+accordion-padding = 30
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'horizontal'
+
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+automatically-unhide-macos-hidden-apps = true
+
+persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+on-mode-changed = []
+
+[key-mapping]
+preset = 'qwerty'
+
+[gaps]
+inner.horizontal = 5
+inner.vertical   = 5
+outer.left       = 5
+outer.bottom     = 5
+outer.top        = 5
+outer.right      = 5
+
+# ---------------------------
+# Main mode bindings
+# ---------------------------
+[mode.main.binding]
+
+# Terminal - always accessible
+alt-enter = '''exec-and-forget osascript -e '
+tell application "Terminal"
+    do script ""
+end tell'
+'''
+
+# Open new Finder window in Downloads folder
+alt-f = '''exec-and-forget osascript -e '
+tell application "Finder"
+    set downloadsFolder to folder "Downloads" of home
+    set newWindow to make new Finder window
+    set target of newWindow to downloadsFolder
+    activate
+end tell'
+'''
+
+# App shortcuts - focus or launch apps
+# These use cmd+letter for quick app switching
+# Adjust the app IDs to match your installed apps
+
+# Terminal
+alt-t = '''exec-and-forget osascript -e '
+tell application "Terminal"
+    activate
+end tell'
+'''
+
+# Safari
+alt-b = '''exec-and-forget osascript -e '
+tell application "Safari"
+    activate
+end tell'
+'''
+
+# Music
+alt-m = '''exec-and-forget osascript -e '
+tell application "Music"
+    activate
+end tell'
+'''
+
+# Photos
+alt-p = '''exec-and-forget osascript -e '
+tell application "Photos"
+    activate
+end tell'
+'''
+
+# Discord
+alt-d = '''exec-and-forget osascript -e '
+tell application "Discord"
+    activate
+end tell'
+'''
+
+# Layout shortcuts
+alt-slash = 'layout tiles horizontal vertical'
+alt-comma = 'layout accordion horizontal vertical'
+
+# Focus (arrow keys)
+# alt-h  = 'focus left'
+# alt-j  = 'focus down'
+# alt-k  = 'focus up'
+# alt-l = 'focus right'
+
+# Move windows (arrow keys + shift)
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+# Joining
+ctrl-alt-h = 'join-with left'
+ctrl-alt-j = 'join-with down'
+ctrl-alt-k = 'join-with up'
+ctrl-alt-l = 'join-with right'
+
+# Resize
+alt-minus = 'resize smart -50'
+alt-equal = 'resize smart +50'
+
+# Workspaces
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-4 = 'workspace 4'
+alt-5 = 'workspace 5'
+alt-6 = 'workspace 6'
+alt-7 = 'workspace 7'
+alt-8 = 'workspace 8'
+alt-9 = 'workspace 9'
+
+# Move windows to workspaces
+alt-shift-1 = 'move-node-to-workspace 1'
+alt-shift-2 = 'move-node-to-workspace 2'
+alt-shift-3 = 'move-node-to-workspace 3'
+alt-shift-4 = 'move-node-to-workspace 4'
+alt-shift-5 = 'move-node-to-workspace 5'
+alt-shift-6 = 'move-node-to-workspace 6'
+alt-shift-7 = 'move-node-to-workspace 7'
+alt-shift-8 = 'move-node-to-workspace 8'
+alt-shift-9 = 'move-node-to-workspace 9'
+
+# Workspace back/forth
+alt-tab = 'workspace-back-and-forth'
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+# Toggle floating for current window
+alt-shift-f = 'layout floating tiling'
+
+# ---------------------------
+# Service mode
+# ---------------------------
+[mode.service.binding]
+esc = ['reload-config', 'mode main']
+r = ['flatten-workspace-tree', 'mode main'] 
+f = ['layout floating tiling', 'mode main']
+
+# ---------------------------
+# Window detection rules
+# ---------------------------
+
+# Finder windows - keep floating but ensure one per workspace
+[[on-window-detected]]
+    if.app-id = "com.apple.finder"
+    run = "layout floating"
+
+# Safari during startup - move to workspace 1 and trigger setup
+[[on-window-detected]]
+    if.app-id = "com.apple.Safari"
+    if.during-aerospace-startup = true
+    run = ["move-node-to-workspace 1", "layout accordion vertical"]
+    check-further-callbacks = true
+
+# Safari after startup - move to workspace 6
+[[on-window-detected]]
+    if.app-id = "com.apple.Safari"
+    if.during-aerospace-startup = false
+    run = "move-node-to-workspace 6"
+    check-further-callbacks = true
+
+# Safari on workspace 1 - ensure accordion layout
+# Note: No check-further-callbacks so it stops here and doesn't get moved to workspace 9
+[[on-window-detected]]
+    if.app-id = "com.apple.Safari"
+    if.workspace = "1"
+    run = "layout accordion vertical"
+
+# Terminal windows on workspace 1 - tile and join to right
+# Note: No check-further-callbacks so it stops here and doesn't get moved to workspace 9
+[[on-window-detected]]
+    if.app-id = "com.apple.Terminal"
+    if.workspace = "1"
+    run = ["layout tiling", "join-with right"]
+
+# Terminal windows elsewhere - just tile them
+[[on-window-detected]]
+    if.app-id = "com.apple.Terminal"
+    run = "layout tiling"
+
+# Floating apps - these must come before the workspace 1 rule
+# so they match first and prevent floating apps from being moved to workspace 9
+# Note: No check-further-callbacks so processing stops here for these apps
+[[on-window-detected]]
+    if.app-id = "com.apple.Preview"
+    run = "layout floating"
+
+[[on-window-detected]]
+    if.app-id = "com.apple.Messages"
+    run = "layout floating"
+
+[[on-window-detected]]
+    if.app-id = "com.apple.ActivityMonitor"
+    run = "layout floating"
+
+[[on-window-detected]]
+    if.app-id = "com.apple.AppStore"
+    run = "layout floating"
+    
+[[on-window-detected]]
+    if.app-id = "com.charliemonroe.Permute-3"
+    run = "layout floating"
+
+# Move any other apps that open in workspace 1 to workspace 9
+# (keeps workspace 1 clean for Safari + terminals + floating apps)
+# Floating apps are excluded because their rules above match first and stop processing
+[[on-window-detected]]
+    if.workspace = "1"
+    run = "move-node-to-workspace 9"
+
+# Uncomment and customize these if you want apps to auto-assign to workspaces:
+[[on-window-detected]]
+	if.app-id = "com.apple.Photos"
+	run = "move-node-to-workspace 2"
+
+[[on-window-detected]]
+	if.app-id = "com.apple.Music"
+	run = "move-node-to-workspace 3"
+	
+[[on-window-detected]]
+	if.app-id = "com.yourcompany.SoulseekQt"
+	run = "move-node-to-workspace 3"
+
+[[on-window-detected]]
+	if.app-id = "com.apple.mail"
+	run = "move-node-to-workspace 4"
+
+[[on-window-detected]]
+	if.app-id = "tv.parsec.www"
+	run = "move-node-to-workspace 5"
+
+[[on-window-detected]]
+	if.app-id = "app.zen-browser.zen"
+	run = "move-node-to-workspace 9"	

@@ -1,0 +1,5 @@
+--cookies-from-browser safari
+--extractor-args "youtube:player_client=web"
+--embed-thumbnail
+-o "~/Downloads/%(title).100s-%(id)s.%(ext)s"
+-f bestvideo[aspect_ratio<1][width<=1080][vcodec^=avc][ext=mp4]+bestaudio/bestvideo[aspect_ratio>=1][height<=1080][vcodec^=avc][ext=mp4]+bestaudio/bestvideo+bestaudio/best

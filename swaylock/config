@@ -1,0 +1,45 @@
+# Catppuccin Frappe (github.com/catppuccin/swaylock themes/frappe.conf)
+# ring-color bumped to mauve so the indicator is visible on wallpaper
+
+color=303446
+
+image=/usr/share/backgrounds/default.jxl
+scaling=fill
+
+indicator-idle-visible
+indicator-radius=80
+indicator-thickness=12
+line-uses-ring
+
+bs-hl-color=f2d5cf
+caps-lock-bs-hl-color=f2d5cf
+caps-lock-key-hl-color=a6d189
+inside-color=303446e6
+inside-clear-color=303446e6
+inside-caps-lock-color=303446e6
+inside-ver-color=303446e6
+inside-wrong-color=303446e6
+key-hl-color=a6d189
+layout-bg-color=232634cc
+layout-border-color=414559ff
+layout-text-color=c6d0f5
+line-clear-color=f2d5cfff
+line-caps-lock-color=ef9f76ff
+line-ver-color=8caaeeff
+line-wrong-color=ea999cff
+ring-color=ca9ee6ff
+ring-clear-color=f2d5cfff
+ring-caps-lock-color=ef9f76ff
+ring-ver-color=8caaeeff
+ring-wrong-color=ea999cff
+separator-color=51576dff
+text-color=c6d0f5ff
+text-clear-color=f2d5cfff
+text-caps-lock-color=ef9f76ff
+text-ver-color=8caaeeff
+text-wrong-color=ea999cff
+
+font=JetBrainsMono Nerd Font
+font-size=20
+
+show-keyboard-layout

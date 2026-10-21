@@ -1,0 +1,12 @@
+# Copy to .gitconfig.local and edit per machine (not tracked by git).
+[user]
+	name = Your Name
+	email = you@example.com
+
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential

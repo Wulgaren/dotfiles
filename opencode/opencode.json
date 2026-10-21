@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permissions": [
+    { "action": "shell", "resource": "rm *", "effect": "ask" },
+    { "action": "shell", "resource": "rmdir *", "effect": "ask" },
+    { "action": "shell", "resource": "mv *", "effect": "ask" },
+    { "action": "shell", "resource": "dd *", "effect": "ask" },
+    { "action": "shell", "resource": "truncate *", "effect": "ask" },
+    { "action": "shell", "resource": "shred *", "effect": "ask" },
+    { "action": "shell", "resource": "find * -delete*", "effect": "ask" },
+    { "action": "shell", "resource": "git clean *", "effect": "ask" },
+    { "action": "shell", "resource": "git reset *", "effect": "ask" },
+    { "action": "shell", "resource": "git checkout -- *", "effect": "ask" },
+    { "action": "shell", "resource": "git checkout .", "effect": "ask" },
+    { "action": "shell", "resource": "git restore *", "effect": "ask" },
+    { "action": "shell", "resource": "git push *", "effect": "ask" },
+    { "action": "shell", "resource": "sudo *", "effect": "ask" },
+    { "action": "shell", "resource": "rm */tmp/*", "effect": "allow" },
+    { "action": "shell", "resource": "rm */private/var/folders/*", "effect": "allow" },
+    { "action": "shell", "resource": "rm *$TMPDIR*", "effect": "allow" },
+    { "action": "shell", "resource": "rm *${TMPDIR}*", "effect": "allow" },
+    { "action": "shell", "resource": "rmdir */tmp/*", "effect": "allow" },
+    { "action": "shell", "resource": "rmdir */private/var/folders/*", "effect": "allow" },
+    { "action": "shell", "resource": "find */tmp/* -delete*", "effect": "allow" },
+    { "action": "shell", "resource": "find */private/var/folders/* -delete*", "effect": "allow" },
+    { "action": "shell", "resource": "find *$TMPDIR* -delete*", "effect": "allow" }
+  ]
+}

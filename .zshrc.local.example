@@ -1,0 +1,5 @@
+# Copy to .zshrc.local and edit per machine (not tracked by git).
+#
+# Private SSH hosts, Tailscale IPs, work paths, etc. belong here — not in .zshrc.
+
+# alias varioweb-rebuild='ssh you@100.x.x.x '\''cd d:/path/to/repo && npm run rebuild && powershell -File d:/path/to/run-lan.ps1'\'''
