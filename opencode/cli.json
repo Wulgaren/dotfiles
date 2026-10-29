@@ -9,5 +9,8 @@
   },
   "session": {
     "permissions": "autoaccept"
+  },
+  "prompt": {
+    "image_preview": true
   }
 }

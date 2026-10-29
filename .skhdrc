@@ -5,10 +5,11 @@ alt - 2 : osascript ~/.config/skhd/open-terminal.scpt
 
 alt - 3 : open -a "Discord"
 alt - 4 : open -a Music
-alt - 5 : open -a Finder
+alt - 5 : open -a "Grok Bot"
 alt - 6 : open -a Photos
 alt - 7 : open -a Reminders
 alt - 8 : open -a Notes
+alt - 9 : open -a Finder
 
 home | play
 delete | mute

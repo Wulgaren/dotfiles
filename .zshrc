@@ -160,7 +160,7 @@ twitter-curator() {
 alias photoscanner='~/Coding/PhotoScanner/photoscanner.sh'
 alias music-catchifier='~/Coding/music-catchifier/music-catchifier.sh'
 
-alias recent-wallpapers='~/Coding/PhotoScanner/venv/bin/python3 ~/Coding/PhotoScanner/src/find_wallpaper.py'
+alias recent-wallpapers='photowall show'
 
 # fzf → vim: current directory
 fzv() {

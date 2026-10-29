@@ -31,6 +31,7 @@ I focus on building complex things as simple as possible. I love to find ways to
 - **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
 - **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked. The `tdd` skill lists needless tests (copies the implementation, tests internals, glue with no known right answer) and when to skip test-first entirely.
 - **YAGNI.** Prefer the smallest model that makes the correct behavior unsurprising. When tempted to add abstractions, layers, or speculative machinery, follow the laziness and subtract-before-you-add skills.
+- **Unslop.** Every piece of prose you write for the user, including commits, PRs, docs, and final answers, follows the `unslop` skill.
 
 ## TypeScript: no `any`
 
