@@ -34,15 +34,15 @@ vim.api.nvim_create_autocmd("FileType", {
 
 -- Native Windows nvim over SSH: Ghostty enables kitty/CSI-u keys after nvim's
 -- startup query, but the MSYS/ConPTY bridge can't deliver CSI-u sequences.
--- Drop the terminal back to legacy encoding so Ctrl/Shift arrive as plain bytes.
+-- Reset the terminal's kitty key stack so Ctrl/Shift arrive as plain bytes.
 if vim.fn.has("win32") == 1 and vim.env.SSH_CONNECTION then
 	vim.api.nvim_create_autocmd("VimEnter", {
 		once = true,
 		callback = function()
 			vim.defer_fn(function()
-				io.stdout:write("\27[<u")
+				io.stdout:write("\27[<100u")
 				io.stdout:flush()
-			end, 500)
+			end, 1000)
 		end,
 	})
 end
