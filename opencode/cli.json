@@ -11,6 +11,6 @@
     "permissions": "autoaccept"
   },
   "prompt": {
-    "image_preview": true
+    "image_preview": false
   }
 }

@@ -1,7 +1,10 @@
 alt - 1 : open -a Helium
 
-alt - return : osascript ~/.config/skhd/open-terminal.scpt
-alt - 2 : osascript ~/.config/skhd/open-terminal.scpt
+alt - 2 : open -a Ghostty
+alt - return : open -a Ghostty
+
+# alt - return : osascript ~/.config/skhd/open-terminal.scpt
+# alt - 2 : osascript ~/.config/skhd/open-terminal.scpt
 
 alt - 3 : open -a "Discord"
 alt - 4 : open -a Music
