@@ -17,6 +17,6 @@ custom-shader-animation = always
 
 # Let apps see real Option/Alt chords (Concord, etc.)
 # Default macOS "natural text editing" rewrites these to ESC b / ESC f.
-keybind = alt+left=unbind
-keybind = alt+right=unbind
-keybind = option+backspace=text:\x1b\x7f
+#keybind = alt+left=unbind
+#keybind = alt+right=unbind
+#keybind = option+backspace=text:\x1b\x7f
