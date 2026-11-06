@@ -5,7 +5,7 @@
   },
   "animations": true,
   "attention": {
-    "notifications": true
+    "notifications": false
   },
   "session": {
     "permissions": "autoaccept"

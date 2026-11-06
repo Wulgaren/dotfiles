@@ -13,6 +13,7 @@ alt - 6 : open -a Photos
 alt - 7 : open -a Reminders
 alt - 8 : open -a Notes
 alt - 9 : open -a Finder
+alt - 0 : osascript ~/.config/skhd/quick-note.scpt
 
 home | play
 delete | mute

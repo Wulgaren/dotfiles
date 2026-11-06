@@ -10,6 +10,7 @@
     { "action": "shell", "resource": "find * -delete*", "effect": "ask" },
     { "action": "shell", "resource": "git clean *", "effect": "ask" },
     { "action": "shell", "resource": "git reset *", "effect": "ask" },
+    { "action": "shell", "resource": "npm install -g", "effect": "ask" },
     { "action": "shell", "resource": "git checkout -- *", "effect": "ask" },
     { "action": "shell", "resource": "git checkout .", "effect": "ask" },
     { "action": "shell", "resource": "git restore *", "effect": "ask" },
