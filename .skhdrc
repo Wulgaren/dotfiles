@@ -40,8 +40,10 @@ mouse < shift - h : /usr/bin/python3 ~/.config/skhd/mouse.py move -160 0
 mouse < shift - j : /usr/bin/python3 ~/.config/skhd/mouse.py move 0 160
 mouse < shift - k : /usr/bin/python3 ~/.config/skhd/mouse.py move 0 -160
 mouse < shift - l : /usr/bin/python3 ~/.config/skhd/mouse.py move 160 0
-mouse < u : /usr/bin/python3 ~/.config/skhd/mouse.py scroll 1
-mouse < d : /usr/bin/python3 ~/.config/skhd/mouse.py scroll -1
+mouse < u : /usr/bin/python3 ~/.config/skhd/mouse.py scroll 5
+mouse < d : /usr/bin/python3 ~/.config/skhd/mouse.py scroll -5
+mouse < shift - u : /usr/bin/python3 ~/.config/skhd/mouse.py scroll 20
+mouse < shift - d : /usr/bin/python3 ~/.config/skhd/mouse.py scroll -20
 mouse < i : /usr/bin/python3 ~/.config/skhd/mouse.py click left
 mouse < o : /usr/bin/python3 ~/.config/skhd/mouse.py click right
 mouse < escape ; default
