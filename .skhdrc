@@ -27,4 +27,9 @@ pagedown | sound_down
 # F6 toggles Do Not Disturb. This keyboard reports F6 and Fn+F6 identically,
 # so both trigger this and F6 no longer reaches apps.
 f6 : /usr/bin/osascript -e 'tell application "System Events" to key code 178'
+
+# Toggle the built-in Mouse Keys (keyboard pointer control). When on, 7/8/9/U/O/
+# J/K/L move the pointer, I clicks and M holds the mouse button.
+cmd + alt - m : /usr/bin/swift ~/.config/skhd/toggle-mouse-keys.swift
+
 cmd - escape : osascript -e 'tell application "System Events" to keystroke "`" using command down'
