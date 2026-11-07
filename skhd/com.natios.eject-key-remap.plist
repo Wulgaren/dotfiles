@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.natios.eject-key-remap</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/natios/Coding/.dotfiles/skhd/eject-key-remap.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- Bluetooth keyboards get a fresh HID service on every reconnect, which
+	     drops the mapping. Re-apply periodically so eject keeps working. -->
+	<key>StartInterval</key>
+	<integer>30</integer>
+	<key>ProcessType</key>
+	<string>Background</string>
+</dict>
+</plist>

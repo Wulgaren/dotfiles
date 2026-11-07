@@ -15,8 +15,16 @@ alt - 8 : open -a Notes
 alt - 9 : open -a Finder
 alt - 0 : osascript ~/.config/skhd/quick-note.scpt
 
+# Eject is remapped to F18 at the HID level by skhd/eject-key-remap.sh.
+# Absolute path: skhd runs with launchd's default PATH, which lacks /opt/homebrew/bin.
+f18 : /opt/homebrew/bin/skhd -k 'cmd + alt - space'
+
 home | play
 delete | mute
 pageup | sound_up
 pagedown | sound_down
+
+# F6 toggles Do Not Disturb. This keyboard reports F6 and Fn+F6 identically,
+# so both trigger this and F6 no longer reaches apps.
+f6 : /usr/bin/osascript -e 'tell application "System Events" to key code 178'
 cmd - escape : osascript -e 'tell application "System Events" to keystroke "`" using command down'

@@ -49,6 +49,9 @@ link AGENT.md ~/.codex/AGENTS.md
 link discordo mac:~/Library/Application Support/discordo
 link concord mac:~/Library/Application Support/concord
 
+# launch agents
+link skhd/com.natios.eject-key-remap.plist mac:~/Library/LaunchAgents/com.natios.eject-key-remap.plist
+
 # windows extras
 link zsh/windows/wmux-ssh.zsh win:~/.zsh/wmux-ssh.zsh
 
