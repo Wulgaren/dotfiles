@@ -28,8 +28,21 @@ pagedown | sound_down
 # so both trigger this and F6 no longer reaches apps.
 f6 : /usr/bin/osascript -e 'tell application "System Events" to key code 178'
 
-# Toggle the built-in Mouse Keys (keyboard pointer control). When on, 7/8/9/U/O/
-# J/K/L move the pointer, I clicks and M holds the mouse button.
-cmd + alt - m : /usr/bin/swift ~/.config/skhd/toggle-mouse-keys.swift
+# Mouse mode: alt-m enters, h/j/k/l move the pointer, i/o click, escape exits.
+# Shift moves in larger steps.
+:: mouse
+alt - m ; mouse
+mouse < h : /usr/bin/python3 ~/.config/skhd/mouse.py move -40 0
+mouse < j : /usr/bin/python3 ~/.config/skhd/mouse.py move 0 40
+mouse < k : /usr/bin/python3 ~/.config/skhd/mouse.py move 0 -40
+mouse < l : /usr/bin/python3 ~/.config/skhd/mouse.py move 40 0
+mouse < shift - h : /usr/bin/python3 ~/.config/skhd/mouse.py move -160 0
+mouse < shift - j : /usr/bin/python3 ~/.config/skhd/mouse.py move 0 160
+mouse < shift - k : /usr/bin/python3 ~/.config/skhd/mouse.py move 0 -160
+mouse < shift - l : /usr/bin/python3 ~/.config/skhd/mouse.py move 160 0
+mouse < i : /usr/bin/python3 ~/.config/skhd/mouse.py click left
+mouse < o : /usr/bin/python3 ~/.config/skhd/mouse.py click right
+mouse < escape ; default
+mouse < alt - m ; default
 
 cmd - escape : osascript -e 'tell application "System Events" to keystroke "`" using command down'
