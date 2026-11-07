@@ -4,6 +4,7 @@
 Usage:
     mouse.py move <dx> <dy>
     mouse.py click [left|right]
+    mouse.py scroll <lines>
 """
 import ctypes
 import ctypes.util
@@ -28,6 +29,13 @@ cg.CGEventCreateMouseEvent.argtypes = [
     ctypes.c_uint32,
 ]
 cg.CGEventPost.argtypes = [ctypes.c_uint32, ctypes.c_void_p]
+cg.CGEventCreateScrollWheelEvent.restype = ctypes.c_void_p
+cg.CGEventCreateScrollWheelEvent.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_uint32,
+    ctypes.c_uint32,
+    ctypes.c_int32,
+]
 cg.CGWarpMouseCursorPosition.restype = ctypes.c_int32
 cg.CGWarpMouseCursorPosition.argtypes = [CGPoint]
 cg.CFRelease.argtypes = [ctypes.c_void_p]
@@ -35,6 +43,7 @@ cg.CFRelease.argtypes = [ctypes.c_void_p]
 MOUSE_DOWN = {"left": 1, "right": 3}
 MOUSE_UP = {"left": 2, "right": 4}
 BUTTON = {"left": 0, "right": 1}
+SCROLL_LINE = 0
 
 
 def location() -> CGPoint:
@@ -47,6 +56,12 @@ def location() -> CGPoint:
 def move(dx: float, dy: float) -> None:
     point = location()
     cg.CGWarpMouseCursorPosition(CGPoint(point.x + dx, point.y + dy))
+
+
+def scroll(lines: int) -> None:
+    event = cg.CGEventCreateScrollWheelEvent(None, SCROLL_LINE, 1, lines)
+    cg.CGEventPost(0, event)
+    cg.CFRelease(event)
 
 
 def click(button: str) -> None:
@@ -64,6 +79,8 @@ def click(button: str) -> None:
 def main() -> None:
     if len(sys.argv) >= 4 and sys.argv[1] == "move":
         move(float(sys.argv[2]), float(sys.argv[3]))
+    elif len(sys.argv) == 3 and sys.argv[1] == "scroll":
+        scroll(int(sys.argv[2]))
     elif len(sys.argv) == 2 and sys.argv[1] == "click":
         click("left")
     elif len(sys.argv) == 3 and sys.argv[1] == "click" and sys.argv[2] in BUTTON:
