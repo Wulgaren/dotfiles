@@ -25,5 +25,24 @@
     { "action": "shell", "resource": "find */tmp/* -delete*", "effect": "allow" },
     { "action": "shell", "resource": "find */private/var/folders/* -delete*", "effect": "allow" },
     { "action": "shell", "resource": "find *$TMPDIR* -delete*", "effect": "allow" }
-  ]
+  ],
+  "providers": {
+    "deeprelay": {
+      "name": "deeprelay",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://api.deeprelay.ai/v1"
+      },
+      "models": {
+        "deeprelay/deepseek-v4.1-flash": {
+          "name": "DeepSeek V4.1 Flash 1017",
+          "limit": { "context": 1048576, "output": 32768 }
+        },
+        "deeprelay/glm-5.3": {
+          "name": "GLM 5.3",
+          "limit": { "context": 1048576, "output": 32768 }
+        }
+      }
+    }
+  }
 }
