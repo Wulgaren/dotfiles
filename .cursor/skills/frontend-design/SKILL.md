@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Creates distinctive, production-grade frontend interfaces with high design quality. Must always apply when building web components, pages, applications, or styling any web UI (websites, landing pages, dashboards, React components, HTML/CSS layouts). Produces creative, polished code that avoids generic AI aesthetics.
+description: Creates distinctive, production-grade frontend interfaces with high design quality. Must always apply when building web components, pages, applications, or styling any web UI (websites, landing pages, dashboards, React components, HTML/CSS layouts). Produces creative, polished code that avoids generic AI aesthetics. Also applies when writing interface copy: eyebrows, echo subheads, helper text that restates a label.
 ---
 
 # Frontend Design
@@ -38,3 +38,28 @@ Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 **Match complexity to vision**: Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful spacing, typography, and subtle details. Execute the vision well.
 
 Interpret creatively and make unexpected choices that feel designed for the context. No two designs should be the same.
+
+## Interface copy
+
+Every string on screen has to tell the reader something they do not already know. Delete the rest. Bad UI text is rarely wrong. It repeats a neighbour, so the fix is deletion rather than a rewrite.
+
+**Delete these:**
+
+- **Eyebrow.** The small label above a heading that restates it. `SETTINGS` over "Settings".
+- **Echo subhead.** A line under a heading that says the heading again in a sentence. "Manage your account" under "Account".
+- **Restating helper text.** Copy under a field or value that repeats its label or its value. "Email. Enter your email address."
+- **Section intro.** A paragraph announcing the list below it before the list has said anything.
+- **Self-narration.** Text describing the interface's own structure. "Here you can see all your projects."
+- **Echo buttons.** A dialog title repeated as the confirming button, or a button label repeated in the body above it.
+
+The causes are worth naming because each one needs a different fix. Template blanks ship placeholder copy nobody deleted. Narrating your own work treats a screen like a commit message. More text feels more finished, so empty space gets filled. Chat habits ("Great question", "Let me know if you need anything else") leak from assistants into products.
+
+**Keep text here:**
+
+- Field errors and validation, which carry a fact the label cannot.
+- Recovery paths: what failed, and what to do about it.
+- Destructive confirmations, where the consequence must be spelled out.
+- Empty states where the screen is blank and the next action is not obvious.
+- Constraints the reader cannot guess: format, limit, timing, cost.
+
+The test: hide the line and read the screen. If nothing is lost it was noise. If something is lost, the label was doing a bad job, so write a better label instead of a helper line under it.
