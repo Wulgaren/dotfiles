@@ -30,7 +30,3 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/code-write --spec "Tests for UserService, same cas
 - Without `--target` the code goes to stdout, which defeats the point and costs you the tokens.
 - After writing, run the repo's tests or typecheck on the target. The worker does not.
 - State the target path in your reply so the user can open it.
-
-## Config
-
-`GRUNT_MODEL` changes the worker, `GRUNT_TIMEOUT` (default 120s) caps a call. Logs land in `~/.claude/grunt.log`.

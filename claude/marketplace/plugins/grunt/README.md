@@ -7,7 +7,7 @@ Two paths:
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
 - **code-writer** generates boilerplate from a reference file and writes it to disk. The generated code never enters the main model's context.
 
-A `PreToolUse` hook enforces the first path: whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill. Targeted reads (`offset`/`limit`), piped shell reads, and files under the threshold pass through. Generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message instead.
+A `PreToolUse` hook routes both paths: whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) and piped shell reads pass through.
 
 ## Install
 
@@ -40,6 +40,6 @@ timestamp  mode  detail  lines  bytes  tokens_avoided  seconds  worker_in  worke
 
 `tokens_avoided` is `bytes / 4`, a rough stand-in for what the main model would have read.
 
-## What it cannot do
+## Limits
 
-The worker misses subtle problems (thread safety, edge cases) and its line numbers drift. Delegation covers understanding, not editing, debugging, or design decisions. The guard lets targeted reads through for that reason.
+Delegation covers understanding, not editing, debugging, or design decisions. Each skill lists when not to use it.

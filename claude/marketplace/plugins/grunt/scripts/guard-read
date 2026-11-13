@@ -69,7 +69,7 @@ check_file() {
 
   if skip_reason "$path"; then
     log_decision "blocked-generated" "$path" "" ""
-    deny "BLOCKED: $path is generated or vendored. Do not read it whole. Use rg to find the exact entry you need, for example: rg '<pattern>' $path"
+    deny "BLOCKED: $path is generated or vendored. Find the exact entry with rg, for example: rg '<pattern>' $path"
   fi
 
   local lines bytes
@@ -78,16 +78,16 @@ check_file() {
 
   bytes="$(file_size "$path")"
   log_decision "blocked-bulk" "$path" "$lines" "$bytes"
-  deny "BLOCKED: $path is $lines lines. Do not read it whole.
+  deny "BLOCKED: $path is $lines lines. Whole-file reads of this size are blocked.
 
-Use the bulk-reader skill instead:
+Use the bulk-reader skill for understanding:
   $ROOT/scripts/bulk-read --question \"<what you need to know>\" --paths $path
 
 Rules:
-- Ask one specific question. The worker answers with bullets, not file contents.
-- For a second question about the same files, run bulk-read again. Re-sending is cheap; the files never enter your context.
-- If you need exact lines to edit, read with offset/limit instead (that is allowed).
-- Do not delegate debugging, design decisions, or safety-critical code."
+- One specific question per call. The worker answers with bullets, not file contents.
+- A second question about the same files: run bulk-read again. Re-sending is cheap; the files stay out of your context.
+- For exact lines to edit, read the range with offset/limit (allowed).
+- Keep debugging, design decisions, and safety-critical code in the main model."
 }
 
 case "$tool" in

@@ -29,7 +29,3 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/bulk-read --question "How does token refresh work?
 - Follow-up question on the same files: run it again with the new question. Re-sending is cheap.
 - Works over any file type, up to about 400 KB total per call.
 - Answers come back as bullets led by file name and line number. Treat them as a map, not as truth.
-
-## Config
-
-`GRUNT_MIN_LINES` (default 350) sets the size at which reads are blocked. `GRUNT_OFF=1` disables the guard. `GRUNT_MODEL` changes the worker. Set them in `~/.claude/settings.json` under `env`.

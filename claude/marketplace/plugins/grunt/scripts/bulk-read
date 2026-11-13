@@ -57,7 +57,7 @@ detail="${#paths[@]} files"
 
 grunt_worker "You are a precise code analyst. Answer the question using only the files below.
 
-Output structured bullets only. No greetings, no prose, no preamble. Lead every bullet with the exact file name and line number. Use nested bullets for detail. Skip anything the caller did not ask for. Never quote more than two lines of code per bullet.
+Answer in structured bullets only, one idea per bullet. Lead every bullet with the exact file name and line number. Use nested bullets for detail. Cover the question and nothing else. Quote at most two lines of code per bullet.
 
 <question>
 $question
