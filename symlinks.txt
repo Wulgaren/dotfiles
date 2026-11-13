@@ -1,6 +1,6 @@
 # repo-path  destination
 # OS tags: mac: linux: win:  (untagged = all OS; if this OS has tagged lines for a repo, only those apply)
-# kinds: link | copy | note
+# kinds: link | copy | linkeach (link each child dir) | note
 
 # home
 link .aerospace.toml ~/.aerospace.toml
@@ -44,6 +44,8 @@ link .cursor/hooks.json ~/.cursor/hooks.json
 link .cursor/hooks ~/.cursor/hooks
 link AGENT.md ~/.agents/AGENT.md
 link AGENT.md ~/.codex/AGENTS.md
+linkeach .cursor/skills ~/.claude/skills
+link AGENT.md ~/.claude/CLAUDE.md
 
 # mac app support
 link discordo mac:~/Library/Application Support/discordo

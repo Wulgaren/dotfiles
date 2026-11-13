@@ -141,6 +141,21 @@ do_copy() {
   echo "copy $src -> $dest"
 }
 
+# Link each child directory of repo_rel into dest_raw (dest dir itself stays real)
+do_linkeach() {
+  local repo_rel="$1" dest_raw="$2"
+  local src child
+  src="$DOTFILES_DIR/$repo_rel"
+  if [[ ! -d "$src" ]]; then
+    echo "skip linkeach $repo_rel: missing in repo" >&2
+    return 0
+  fi
+  for child in "$src"/*/; do
+    child="$(basename "$child")"
+    do_symlink "$repo_rel/$child" "$dest_raw/$child"
+  done
+}
+
 # Print: kind<TAB>repo<TAB>rest
 list_entries() {
   local line kind rest repo dest name msg
@@ -151,7 +166,7 @@ list_entries() {
     rest="${line#"$kind"}"
     rest="${rest#"${rest%%[![:space:]]*}"}"
     case "$kind" in
-      link|copy)
+      link|copy|linkeach)
         repo="${rest%% *}"
         dest="${rest#"$repo"}"
         dest="${dest#"${dest%%[![:space:]]*}"}"
@@ -183,7 +198,7 @@ repos_preferring_os() {
   local os="$1" filter="$2"
   local kind repo raw out=""
   while IFS=$'\t' read -r kind repo raw; do
-    [[ "$kind" == link || "$kind" == copy ]] || continue
+    [[ "$kind" == link || "$kind" == copy || "$kind" == linkeach ]] || continue
     name_matches "$filter" "$repo" || continue
     parse_dest "$raw"
     if [[ "$DEST_TAG" == "$os" ]]; then
@@ -212,7 +227,7 @@ cmd_sync() {
       note)
         echo "note [$repo] $raw"
         ;;
-      link|copy)
+      link|copy|linkeach)
         parse_dest "$raw"
         if [[ -n "$DEST_TAG" && "$DEST_TAG" != "$os" ]]; then
           continue
@@ -222,6 +237,8 @@ cmd_sync() {
         fi
         if [[ "$kind" == link ]]; then
           do_symlink "$repo" "$DEST_PATH"
+        elif [[ "$kind" == linkeach ]]; then
+          do_linkeach "$repo" "$DEST_PATH"
         else
           do_copy "$repo" "$DEST_PATH"
         fi
