@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Answer a question about one or more files without loading them into the main
+# model's context. The files go to the worker; only the answer comes back.
+#
+#   bulk-read --question "How does auth refresh work?" --paths src/a.ts src/b.ts
+#
+# Every call is one shot. Asking a follow-up question about the same files is
+# cheap: the files are sent to the worker again, not to the main model.
+
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+usage() {
+  cat >&2 <<EOF
+Usage: bulk-read --question "<question>" --paths <file> [file...]
+EOF
+  exit 64
+}
+
+question=""
+paths=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --question|-q) [[ $# -ge 2 ]] || usage; question="$2"; shift 2 ;;
+    --paths|-p)
+      shift
+      while [[ $# -gt 0 && "$1" != -* ]]; do paths+=("$1"); shift; done
+      ;;
+    *) echo "unknown argument: $1" >&2; usage ;;
+  esac
+done
+
+[[ -n "$question" && ${#paths[@]} -gt 0 ]] || usage
+
+total_bytes=0
+total_lines=0
+corpus=""
+for path in "${paths[@]}"; do
+  [[ -f "$path" ]] || { echo "no such file: $path" >&2; exit 1; }
+  bytes="$(wc -c < "$path" | tr -d ' ')"
+  lines="$(wc -l < "$path" | tr -d ' ')"
+  total_bytes=$((total_bytes + bytes))
+  total_lines=$((total_lines + lines))
+  corpus+="<file path=\"$path\">
+$(cat "$path")
+</file>
+"
+done
+
+if (( total_bytes > 400000 )); then
+  printf 'too large: %s files, %s bytes. Split into smaller calls.\n' "${#paths[@]}" "$total_bytes" >&2
+  exit 1
+fi
+
+detail="${#paths[@]} files"
+
+grunt_worker "You are a precise code analyst. Answer the question using only the files below.
+
+Output structured bullets only. No greetings, no prose, no preamble. Lead every bullet with the exact file name and line number. Use nested bullets for detail. Skip anything the caller did not ask for. Never quote more than two lines of code per bullet.
+
+<question>
+$question
+</question>
+
+$corpus"
+
+printf '%s\n' "$WORKER_TEXT"
+grunt_log "bulk-read" "$detail" "$total_lines" "$total_bytes" >/dev/null

@@ -46,6 +46,7 @@ link AGENT.md ~/.agents/AGENT.md
 link AGENT.md ~/.codex/AGENTS.md
 linkeach .cursor/skills ~/.claude/skills
 link AGENT.md ~/.claude/CLAUDE.md
+link claude/marketplace ~/.claude/local-marketplace
 
 # mac app support
 link discordo mac:~/Library/Application Support/discordo

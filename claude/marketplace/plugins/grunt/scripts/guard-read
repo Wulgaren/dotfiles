@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# PreToolUse guard. Blocks whole-file reads over GRUNT_MIN_LINES (default 350)
+# and points Claude at the bulk-reader skill instead. Targeted reads (Read with
+# offset/limit, piped shell reads) pass through, because they are cheap.
+#
+# Exits 2 to deny the tool call; stderr becomes the reason Claude sees.
+# Any internal failure exits 0 (allow). A broken guard must not stop all work.
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MIN_LINES="${GRUNT_MIN_LINES:-350}"
+LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
+
+[[ "${GRUNT_OFF:-}" == "1" ]] && exit 0
+
+input="$(cat)"
+tool="$(jq -r '.tool_name // empty' <<<"$input" 2>/dev/null)" || exit 0
+[[ -z "$tool" ]] && exit 0
+
+# Generated or vendored files: never worth a whole read.
+skip_reason() {
+  local path="$1" base
+  base="$(basename "$path")"
+  case "$base" in
+    *.lock|*-lock.json|yarn.lock|pnpm-lock.yaml|go.sum|*.min.js|*.min.css|*.map|*.snap)
+      return 0 ;;
+  esac
+  case "$path" in
+    */node_modules/*|*/vendor/*|*/dist/*|*/build/*|*/.next/*|*/target/*|*/__snapshots__/*)
+      return 0 ;;
+  esac
+  return 1
+}
+
+# Binary files have no lines worth counting. Read them as usual.
+is_binary() {
+  case "$1" in
+    *.png|*.jpg|*.jpeg|*.gif|*.webp|*.ico|*.pdf|*.zip|*.gz|*.tar|*.mp4|*.mov|*.mp3|*.wasm|*.sqlite|*.db|*.woff|*.woff2|*.ttf)
+      return 0 ;;
+  esac
+  return 1
+}
+
+line_count() {
+  wc -l < "$1" 2>/dev/null | tr -d ' '
+}
+
+file_size() {
+  wc -c < "$1" 2>/dev/null | tr -d ' '
+}
+
+log_decision() {
+  local mode="$1" path="$2" lines="$3" bytes="$4"
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "$path" "$lines" "$bytes" >> "$LOG" 2>/dev/null
+}
+
+deny() {
+  printf '%s\n' "$1" >&2
+  exit 2
+}
+
+check_file() {
+  local path="$1"
+
+  [[ -f "$path" ]] || exit 0
+  is_binary "$path" && exit 0
+
+  if skip_reason "$path"; then
+    log_decision "blocked-generated" "$path" "" ""
+    deny "BLOCKED: $path is generated or vendored. Do not read it whole. Use rg to find the exact entry you need, for example: rg '<pattern>' $path"
+  fi
+
+  local lines bytes
+  lines="$(line_count "$path")"
+  [[ -z "$lines" || "$lines" -le "$MIN_LINES" ]] && exit 0
+
+  bytes="$(file_size "$path")"
+  log_decision "blocked-bulk" "$path" "$lines" "$bytes"
+  deny "BLOCKED: $path is $lines lines. Do not read it whole.
+
+Use the bulk-reader skill instead:
+  $ROOT/scripts/bulk-read --question \"<what you need to know>\" --paths $path
+
+Rules:
+- Ask one specific question. The worker answers with bullets, not file contents.
+- For a second question about the same files, run bulk-read again. Re-sending is cheap; the files never enter your context.
+- If you need exact lines to edit, read with offset/limit instead (that is allowed).
+- Do not delegate debugging, design decisions, or safety-critical code."
+}
+
+case "$tool" in
+  Read)
+    file="$(jq -r '.tool_input.file_path // empty' <<<"$input")"
+    offset="$(jq -r '.tool_input.offset // empty' <<<"$input")"
+    limit="$(jq -r '.tool_input.limit // empty' <<<"$input")"
+    [[ -z "$file" ]] && exit 0
+    [[ -n "$offset" || -n "$limit" ]] && exit 0
+    check_file "$file"
+    ;;
+  Bash)
+    cmd="$(jq -r '.tool_input.command // empty' <<<"$input")"
+    [[ -z "$cmd" ]] && exit 0
+    # Pipes, redirects, chaining mean the read is targeted. Let them through.
+    [[ "$cmd" == *"|"* || "$cmd" == *">"* || "$cmd" == *"<"* || "$cmd" == *";"* || "$cmd" == *'$('* ]] && exit 0
+    [[ "$cmd" =~ ^[[:space:]]*(cat|head|tail|less|more)[[:space:]] ]] || exit 0
+
+    # Only a command with exactly one plain argument is a whole-file read.
+    read -r -a words <<< "$cmd"
+    args=()
+    for w in "${words[@]:1}"; do
+      [[ "$w" == -* ]] || args+=("$w")
+    done
+    [[ "${#args[@]}" -eq 1 ]] || exit 0
+    check_file "${args[0]}"
+    ;;
+esac
+
+exit 0

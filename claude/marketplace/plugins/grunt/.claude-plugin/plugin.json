@@ -1,0 +1,9 @@
+{
+  "name": "grunt",
+  "version": "0.1.0",
+  "description": "Delegates bulk reads and boilerplate generation to a cheap worker model so the main model keeps its context for reasoning",
+  "author": {
+    "name": "natios"
+  },
+  "keywords": ["tokens", "delegation", "cost", "hooks"]
+}

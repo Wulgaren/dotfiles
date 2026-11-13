@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Generate boilerplate that follows an existing file, and write it straight to
+# disk. The main model never sees the generated code, only a short summary.
+#
+#   code-write --spec "Tests for UserService" --reference tests/OrderTest.ts --target tests/UserTest.ts
+#
+# --reference is required: without a file to match, the worker invents its own
+# conventions. Without --target the code goes to stdout instead.
+
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+usage() {
+  cat >&2 <<EOF
+Usage: code-write --spec "<what to write>" --reference <file> [--target <file>] [--force]
+EOF
+  exit 64
+}
+
+spec=""
+reference=""
+target=""
+force=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --spec|-s) [[ $# -ge 2 ]] || usage; spec="$2"; shift 2 ;;
+    --reference|-r) [[ $# -ge 2 ]] || usage; reference="$2"; shift 2 ;;
+    --target|-t) [[ $# -ge 2 ]] || usage; target="$2"; shift 2 ;;
+    --force|-f) force=1; shift ;;
+    *) echo "unknown argument: $1" >&2; usage ;;
+  esac
+done
+
+[[ -n "$spec" && -n "$reference" ]] || usage
+[[ -f "$reference" ]] || { echo "no such reference file: $reference" >&2; exit 1; }
+
+if [[ -n "$target" && -e "$target" && "$force" -ne 1 ]]; then
+  echo "target exists: $target. Pass --force to overwrite." >&2
+  exit 1
+fi
+
+ref_bytes="$(wc -c < "$reference" | tr -d ' ')"
+ref_lines="$(wc -l < "$reference" | tr -d ' ')"
+
+grunt_worker "You generate code files from a spec and reference files.
+
+Match the existing patterns, conventions, naming, imports and style of the reference exactly. Output only the code. No explanations. No markdown fences. No test runner commands. If the spec is ambiguous, choose what the reference code does.
+
+<spec>
+$spec
+</spec>
+
+<reference path=\"$reference\">
+$(cat "$reference")
+</reference>"
+
+code="$WORKER_TEXT"
+
+# Strip a wrapping markdown fence if the worker added one anyway.
+if [[ "$code" == '```'* ]]; then
+  code="${code#*$'\n'}"
+  code="${code%'```'*}"
+fi
+
+lines="$(printf '%s\n' "$code" | wc -l | tr -d ' ')"
+
+if [[ -z "$target" ]]; then
+  printf '%s\n' "$code"
+  grunt_log "code-write-stdout" "$reference" "$ref_lines" "$ref_bytes" >/dev/null
+  exit 0
+fi
+
+mkdir -p "$(dirname "$target")"
+tmp="$(mktemp "$(dirname "$target")/.grunt.XXXXXX")"
+printf '%s\n' "$code" > "$tmp"
+mv "$tmp" "$target"
+
+printf 'wrote %s (%s lines)\n' "$target" "$lines"
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  if git ls-files --error-unmatch -- "$target" >/dev/null 2>&1; then
+    git diff --stat -- "$target" 2>/dev/null | sed '$d'
+  else
+    printf 'new file (+%s lines)\n' "$lines"
+  fi
+fi
+grunt_log "code-write" "$target" "$ref_lines" "$ref_bytes" >/dev/null

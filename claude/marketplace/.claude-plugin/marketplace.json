@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "natios",
+  "description": "Local Claude Code plugins from natios dotfiles",
+  "owner": {
+    "name": "natios"
+  },
+  "plugins": [
+    {
+      "name": "grunt",
+      "description": "Delegates bulk reads and boilerplate generation to a cheap worker model",
+      "source": "./plugins/grunt"
+    }
+  ]
+}

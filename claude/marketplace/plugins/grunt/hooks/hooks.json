@@ -1,0 +1,16 @@
+{
+  "description": "Block whole-file reads that a worker model should summarize instead",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/guard-read"
+          }
+        ]
+      }
+    ]
+  }
+}
