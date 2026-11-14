@@ -121,14 +121,22 @@ step() {
   local before
   before="$(git -C "$worktree" rev-parse HEAD)"
 
-  local flags=(--auto)
+  # --continue resends the original spec with the review notes, so a worker
+  # without the earlier session (after a switch to Cursor) still has the task.
+  local session=""
   if (( continue_session )); then
     [[ -s "$(state_file session)" ]] || die "no worker session to continue for '$task'"
-    flags+=(--session "$(cat "$(state_file session)")")
+    session="$(cat "$(state_file session)")"
+    spec="$(cat "$(state_file spec)")
+
+Review notes on your previous attempt:
+$spec"
+  else
+    printf '%s\n' "$spec" > "$(state_file spec)"
   fi
 
   cd "$worktree"
-  grunt_worker "$GRUNT_CODER_MODEL" "$GRUNT_CODER_TIMEOUT" "You implement one step of a plan in this repository. A reviewer reads your diff when you finish.
+  grunt_worker "$GRUNT_CODER_MODEL" "$GRUNT_CODER_SWITCH_AFTER" "$GRUNT_CODER_TIMEOUT" edit "You implement one step of a plan in this repository. A reviewer reads your diff when you finish.
 
 - Work inside this directory. Edit files and run commands. The caller commits, so leave git as it is.
 - Read the files the spec names before editing, and match the patterns, naming and style of the surrounding code.
@@ -143,7 +151,7 @@ $spec
 
 <check>
 $check
-</check>" "${flags[@]}"
+</check>" "$session"
   printf '%s\n' "$WORKER_SESSION" > "$(state_file session)"
 
   local check_out check_status
@@ -155,7 +163,9 @@ $check
 
   commit_all "step"
 
-  printf '## worker\n%s\n\n' "$WORKER_TEXT"
+  printf '## worker (%s)\n' "$WORKER_BACKEND"
+  [[ -n "$WORKER_NOTE" ]] && printf '%s\n' "$WORKER_NOTE"
+  printf '%s\n\n' "$WORKER_TEXT"
   if (( check_status == 0 )); then
     printf '## check: pass\n\n'
   else

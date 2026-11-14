@@ -1,11 +1,11 @@
 # grunt
 
-Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model (DeepSeek V4.1 Flash through `opencode`).
+Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: DeepSeek V4.1 Flash through `opencode`. When DeepSeek runs past its switch time or fails, Cursor's `agent` CLI with the Auto model takes over for the rest of the time limit.
 
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an `opencode` agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, and `finish` applies the whole task to the working tree as uncommitted edits.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, and `finish` applies the whole task to the working tree as uncommitted edits.
 
 A `PreToolUse` hook routes reads: whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) and piped shell reads pass through.
 
@@ -26,9 +26,12 @@ Set in `~/.claude/settings.json` under `env`:
 |---|---|---|
 | `GRUNT_MIN_LINES` | `350` | Block reads above this line count |
 | `GRUNT_MODEL` | `opencode-go/deepseek-v4.1-flash#low` | bulk-read model |
-| `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call |
+| `GRUNT_SWITCH_AFTER` | `60` | Seconds before a bulk-read call switches to Cursor |
+| `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call, both workers together |
 | `GRUNT_CODER_MODEL` | `opencode-go/deepseek-v4.1-flash#high` | code-write model |
-| `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, under Claude's 600s Bash limit |
+| `GRUNT_CODER_SWITCH_AFTER` | `160` | Seconds before a code-write step switches to Cursor |
+| `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, both workers together, under Claude's 600s Bash limit |
+| `GRUNT_FALLBACK_MODEL` | `auto` | Cursor `agent` model |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
@@ -37,7 +40,7 @@ Set in `~/.claude/settings.json` under `env`:
 TSV, one row per delegation or block:
 
 ```
-timestamp  mode  detail  lines  bytes  tokens_avoided  seconds  worker_in  worker_out
+timestamp  mode  detail  lines  bytes  tokens_avoided  seconds  worker_in  worker_out  backend
 ```
 
 `tokens_avoided` is `bytes / 4`, a rough stand-in for what the main model would have read.

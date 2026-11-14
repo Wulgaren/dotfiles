@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: Hand a planned implementation step to the grunt worker (DeepSeek), which edits files in a git worktree while you write the spec and review the diff. Use for any step that writes new code or spans several files. Keep debugging, security, money and migration code, and few-line edits for yourself.
+description: Hand a planned implementation step to the grunt worker (DeepSeek, or Cursor Auto when DeepSeek is slow), which edits files in a git worktree while you write the spec and review the diff. Use for any step that writes new code or spans several files. Keep debugging, security, money and migration code, and few-line edits for yourself.
 ---
 
 # code-writer
@@ -36,4 +36,5 @@ Script: `${CLAUDE_PLUGIN_ROOT}/scripts/code-write`. Run it from the main reposit
 
 - Worktrees live under `~/.cache/grunt/<repo>-<task>` (`$XDG_CACHE_HOME` is honored), inside the home directory rather than the system temp dir, so container builds that mount `$HOME` can see them.
 - The worktree holds tracked files, any carried edits, and symlinks to a root-level `node_modules` or `.venv`. Other ignored files such as `.env` stay behind. When a check needs them, put the setup in the spec.
-- If the worker fails (timeout, crash), its partial edits stay uncommitted in the worktree. Inspect them with `git -C <worktree> diff`. The next `step` commits them along with any fixes of yours.
+- DeepSeek gets 160s per step. If it runs out or crashes, Cursor Auto continues on its partial edits with the rest of the time, and the step output names the backend. `--continue` resumes whichever worker finished the step.
+- If both workers fail, their partial edits stay uncommitted in the worktree. Inspect them with `git -C <worktree> diff`. The next `step` commits them along with any fixes of yours.
