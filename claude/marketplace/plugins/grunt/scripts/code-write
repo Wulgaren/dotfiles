@@ -1,87 +1,210 @@
 #!/usr/bin/env bash
-# Generate boilerplate that follows an existing file, and write it straight to
-# disk. The main model never sees the generated code, only a short summary.
+# Hand implementation steps to the worker model. The worker edits files in a
+# git worktree; the caller plans, reviews each step's diff, and applies the
+# finished task to the main working tree.
 #
-#   code-write --spec "Tests for UserService" --reference tests/OrderTest.ts --target tests/UserTest.ts
+#   code-write start  <task> [--with-uncommitted | --from-head]
+#   code-write step   <task> --spec "<what to build>" --check "<cmd>" [--continue]
+#   code-write finish <task>
+#   code-write abort  <task>
 #
-# --reference is required: without a file to match, the worker invents its own
-# conventions. Without --target the code goes to stdout instead.
+# Run every subcommand from inside the main repository. Each step is committed
+# on branch grunt/<task>, so `step` prints exactly what that step changed.
 
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+# Dependency folders linked from the main tree so checks run in the worktree.
+# Committing and diffing exclude them.
+LINKED_DIRS=(node_modules .venv)
+EXCLUDES=(":(exclude)node_modules" ":(exclude).venv")
+
 usage() {
   cat >&2 <<EOF
-Usage: code-write --spec "<what to write>" --reference <file> [--target <file>] [--force]
+Usage:
+  code-write start  <task> [--with-uncommitted | --from-head]
+  code-write step   <task> --spec "<what to build>" --check "<cmd>" [--continue]
+  code-write finish <task>
+  code-write abort  <task>
 EOF
   exit 64
 }
 
-spec=""
-reference=""
-target=""
-force=0
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --spec|-s) [[ $# -ge 2 ]] || usage; spec="$2"; shift 2 ;;
-    --reference|-r) [[ $# -ge 2 ]] || usage; reference="$2"; shift 2 ;;
-    --target|-t) [[ $# -ge 2 ]] || usage; target="$2"; shift 2 ;;
-    --force|-f) force=1; shift ;;
-    *) echo "unknown argument: $1" >&2; usage ;;
-  esac
-done
-
-[[ -n "$spec" && -n "$reference" ]] || usage
-[[ -f "$reference" ]] || { echo "no such reference file: $reference" >&2; exit 1; }
-
-if [[ -n "$target" && -e "$target" && "$force" -ne 1 ]]; then
-  echo "target exists: $target. Pass --force to overwrite." >&2
+die() {
+  printf '%s\n' "$1" >&2
   exit 1
-fi
+}
 
-ref_bytes="$(wc -c < "$reference" | tr -d ' ')"
-ref_lines="$(wc -l < "$reference" | tr -d ' ')"
+root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "not inside a git repository"
 
-grunt_worker "You generate code files from a spec and reference files.
+[[ $# -ge 2 ]] || usage
+command="$1"
+task="$2"
+shift 2
+[[ "$task" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "task name must be lowercase letters, digits and dashes: $task"
 
-Match the existing patterns, conventions, naming, imports and style of the reference exactly. Output the file contents only, with no explanation, no markdown fences, and no test runner commands. If the spec is ambiguous, choose what the reference code does.
+tmp_root="${TMPDIR:-/tmp}"
+worktree="${tmp_root%/}/grunt/$(basename "$root")-$task"
+branch="grunt/$task"
+
+# Per-worktree state file: base commit and worker session.
+state_file() {
+  printf '%s/grunt-%s' "$(git -C "$worktree" rev-parse --git-dir)" "$1"
+}
+
+require_worktree() {
+  [[ -d "$worktree" ]] || die "no task '$task'. Run: code-write start $task"
+}
+
+commit_all() {
+  local message="$1"
+  git -C "$worktree" add -A -- . "${EXCLUDES[@]}"
+  git -C "$worktree" -c commit.gpgsign=false -c user.name=grunt -c user.email=grunt@localhost \
+    commit -q --no-verify --allow-empty -m "$message"
+}
+
+has_changes() {
+  [[ -n "$(git -C "$worktree" status --porcelain -- . "${EXCLUDES[@]}")" ]]
+}
+
+start() {
+  local carry=""
+  case "${1:-}" in
+    --with-uncommitted) carry=1 ;;
+    --from-head) carry=0 ;;
+    "") ;;
+    *) usage ;;
+  esac
+
+  [[ -e "$worktree" ]] && die "task '$task' already exists at $worktree. Finish or abort it first."
+
+  if [[ -n "$(git -C "$root" status --porcelain)" && -z "$carry" ]]; then
+    die "the working tree has uncommitted changes. Ask the user whether the worker should build on them, then rerun with --with-uncommitted or --from-head."
+  fi
+
+  mkdir -p "$(dirname "$worktree")"
+  git -C "$root" worktree add -q -b "$branch" "$worktree" HEAD
+
+  if [[ "$carry" == 1 ]]; then
+    local patch
+    patch="$(mktemp)"
+    git -C "$root" diff HEAD --binary > "$patch"
+    [[ -s "$patch" ]] && git -C "$worktree" apply --binary "$patch"
+    rm -f "$patch"
+    (cd "$root" && git ls-files --others --exclude-standard -z | tar --null -T - -cf -) | tar -xf - -C "$worktree"
+  fi
+
+  for dir in "${LINKED_DIRS[@]}"; do
+    [[ -d "$root/$dir" && ! -e "$worktree/$dir" ]] && ln -s "$root/$dir" "$worktree/$dir"
+  done
+
+  commit_all "grunt base"
+  git -C "$worktree" rev-parse HEAD > "$(state_file base)"
+  printf 'started %s at %s\n' "$task" "$worktree"
+}
+
+step() {
+  local spec="" check="" continue_session=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --spec) [[ $# -ge 2 ]] || usage; spec="$2"; shift 2 ;;
+      --check) [[ $# -ge 2 ]] || usage; check="$2"; shift 2 ;;
+      --continue) continue_session=1; shift ;;
+      *) usage ;;
+    esac
+  done
+  [[ -n "$spec" && -n "$check" ]] || usage
+  require_worktree
+
+  # Edits the orchestrator made in the worktree since the last step.
+  has_changes && commit_all "orchestrator edits"
+  local before
+  before="$(git -C "$worktree" rev-parse HEAD)"
+
+  local flags=(--auto)
+  if (( continue_session )); then
+    [[ -s "$(state_file session)" ]] || die "no worker session to continue for '$task'"
+    flags+=(--session "$(cat "$(state_file session)")")
+  fi
+
+  cd "$worktree"
+  grunt_worker "$GRUNT_CODER_MODEL" "$GRUNT_CODER_TIMEOUT" "You implement one step of a plan in this repository. A reviewer reads your diff when you finish.
+
+- Work inside this directory. Edit files and run commands. The caller commits, so leave git as it is.
+- Read the files the spec names before editing, and match the patterns, naming and style of the surrounding code.
+- Nobody answers questions during this run. When the spec is ambiguous, do what the existing code does and record the assumption.
+- Make the smallest change that satisfies the spec.
+- Run the check command after editing. Fix and rerun until it passes, or until you are sure the failure lies outside this step.
+- Finish with at most 8 bullets: what you changed, the assumptions you made, and anything left undone.
 
 <spec>
 $spec
 </spec>
 
-<reference path=\"$reference\">
-$(cat "$reference")
-</reference>"
+<check>
+$check
+</check>" "${flags[@]}"
+  printf '%s\n' "$WORKER_SESSION" > "$(state_file session)"
 
-code="$WORKER_TEXT"
+  local check_out check_status
+  check_out="$(mktemp)"
+  set +e
+  bash -c "$check" > "$check_out" 2>&1
+  check_status=$?
+  set -e
 
-# Strip a wrapping markdown fence if the worker added one anyway.
-if [[ "$code" == '```'* ]]; then
-  code="${code#*$'\n'}"
-  code="${code%'```'*}"
-fi
+  commit_all "step"
 
-lines="$(printf '%s\n' "$code" | wc -l | tr -d ' ')"
-
-if [[ -z "$target" ]]; then
-  printf '%s\n' "$code"
-  grunt_log "code-write-stdout" "$reference" "$ref_lines" "$ref_bytes" >/dev/null
-  exit 0
-fi
-
-mkdir -p "$(dirname "$target")"
-tmp="$(mktemp "$(dirname "$target")/.grunt.XXXXXX")"
-printf '%s\n' "$code" > "$tmp"
-mv "$tmp" "$target"
-
-printf 'wrote %s (%s lines)\n' "$target" "$lines"
-if git rev-parse --git-dir >/dev/null 2>&1; then
-  if git ls-files --error-unmatch -- "$target" >/dev/null 2>&1; then
-    git diff --stat -- "$target" 2>/dev/null | sed '$d'
+  printf '## worker\n%s\n\n' "$WORKER_TEXT"
+  if (( check_status == 0 )); then
+    printf '## check: pass\n\n'
   else
-    printf 'new file (+%s lines)\n' "$lines"
+    printf '## check: FAIL (exit %s), last 40 lines\n' "$check_status"
+    tail -40 "$check_out"
+    printf '\n'
   fi
-fi
-grunt_log "code-write" "$target" "$ref_lines" "$ref_bytes" >/dev/null
+  rm -f "$check_out"
+
+  local diff
+  diff="$(git -C "$worktree" diff "$before" HEAD -- . "${EXCLUDES[@]}")"
+  printf '## diff\n%s\n' "${diff:-(no changes)}"
+
+  grunt_log "code-write" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
+}
+
+finish() {
+  require_worktree
+  has_changes && commit_all "orchestrator edits"
+
+  local patch
+  patch="$(mktemp)"
+  git -C "$worktree" diff --binary "$(cat "$(state_file base)")" HEAD -- . "${EXCLUDES[@]}" > "$patch"
+
+  if [[ -s "$patch" ]]; then
+    if ! git -C "$root" apply --binary "$patch"; then
+      rm -f "$patch"
+      die "patch does not apply to $root, which changed since start. The worktree stays at $worktree; resolve by hand, then run: code-write abort $task"
+    fi
+    git -C "$root" apply --stat "$patch"
+  else
+    printf 'no changes to apply\n'
+  fi
+  rm -f "$patch"
+
+  abort
+}
+
+abort() {
+  require_worktree
+  git -C "$root" worktree remove --force "$worktree"
+  git -C "$root" branch -q -D "$branch"
+  printf 'removed %s\n' "$worktree"
+}
+
+case "$command" in
+  start) start "$@" ;;
+  step) step "$@" ;;
+  finish) finish "$@" ;;
+  abort) abort ;;
+  *) usage ;;
+esac

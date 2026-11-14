@@ -1,13 +1,13 @@
 # grunt
 
-Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model (`opencode-go/deepseek-v4.1-flash#low` by default).
+Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model (DeepSeek V4.1 Flash through `opencode`).
 
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** generates boilerplate from a reference file and writes it to disk. The generated code never enters the main model's context.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an `opencode` agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, and `finish` applies the whole task to the working tree as uncommitted edits.
 
-A `PreToolUse` hook routes both paths: whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) and piped shell reads pass through.
+A `PreToolUse` hook routes reads: whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) and piped shell reads pass through.
 
 ## Install
 
@@ -25,8 +25,10 @@ Set in `~/.claude/settings.json` under `env`:
 | Var | Default | Meaning |
 |---|---|---|
 | `GRUNT_MIN_LINES` | `350` | Block reads above this line count |
-| `GRUNT_MODEL` | `opencode-go/deepseek-v4.1-flash#low` | Worker model |
-| `GRUNT_TIMEOUT` | `120` | Seconds per worker call |
+| `GRUNT_MODEL` | `opencode-go/deepseek-v4.1-flash#low` | bulk-read model |
+| `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call |
+| `GRUNT_CODER_MODEL` | `opencode-go/deepseek-v4.1-flash#high` | code-write model |
+| `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, under Claude's 600s Bash limit |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 

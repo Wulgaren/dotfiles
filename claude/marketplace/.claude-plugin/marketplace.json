@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "grunt",
-      "description": "Delegates bulk reads and boilerplate generation to a cheap worker model",
+      "description": "Delegates bulk reads and planned coding steps to a cheap worker model",
       "source": "./plugins/grunt"
     }
   ]

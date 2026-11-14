@@ -1,7 +1,7 @@
 {
   "name": "grunt",
-  "version": "0.1.0",
-  "description": "Delegates bulk reads and boilerplate generation to a cheap worker model so the main model keeps its context for reasoning",
+  "version": "0.2.0",
+  "description": "Delegates bulk reads and planned coding steps to a cheap worker model while the main model plans and reviews",
   "author": {
     "name": "natios"
   },

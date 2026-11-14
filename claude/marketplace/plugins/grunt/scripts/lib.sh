@@ -1,31 +1,32 @@
 #!/usr/bin/env bash
 # Shared worker plumbing for the grunt plugin.
 #
-# grunt_worker "<prompt>" runs the cheap model, sets WORKER_TEXT plus token
+# grunt_worker <model> <timeout> "<prompt>" [opencode run flags...] runs the
+# worker in the current directory, sets WORKER_TEXT, WORKER_SESSION and token
 # counts, and exits non-zero with a readable reason on failure.
-#
-# Config (env):
-#   GRUNT_MODEL     worker model, default opencode-go/deepseek-v4.1-flash#low
-#   GRUNT_TIMEOUT   seconds per call, default 120
-#   GRUNT_LOG       usage log, default ~/.claude/grunt.log
+# Config vars and defaults are documented in the plugin README.
 
 GRUNT_MODEL="${GRUNT_MODEL:-opencode-go/deepseek-v4.1-flash#low}"
 GRUNT_TIMEOUT="${GRUNT_TIMEOUT:-120}"
+GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-opencode-go/deepseek-v4.1-flash#high}"
+GRUNT_CODER_TIMEOUT="${GRUNT_CODER_TIMEOUT:-540}"
 GRUNT_LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 
 WORKER_TEXT=""
+WORKER_SESSION=""
 WORKER_IN=0
 WORKER_OUT=0
 WORKER_SECONDS=0
 
 grunt_fail() {
   printf 'worker failed: %s\n' "$1" >&2
-  printf 'Retry with a smaller request, or read the file directly with offset/limit.\n' >&2
+  printf 'Split the request into smaller calls, or do the work yourself.\n' >&2
   exit 1
 }
 
 grunt_worker() {
-  local prompt="$1" raw err status started ended
+  local model="$1" limit="$2" prompt="$3" raw err status started ended
+  shift 3
 
   command -v opencode >/dev/null || grunt_fail "opencode not on PATH"
 
@@ -33,15 +34,15 @@ grunt_worker() {
   err="$(mktemp)"
 
   started="$(date +%s)"
-  timeout "$GRUNT_TIMEOUT" \
-    opencode run --archived --format json -m "$GRUNT_MODEL" "$prompt" >"$raw" 2>"$err"
+  timeout "$limit" \
+    opencode run --archived --format json -m "$model" "$@" "$prompt" >"$raw" 2>"$err"
   status=$?
   ended="$(date +%s)"
   WORKER_SECONDS=$((ended - started))
 
   if (( status == 124 )); then
     rm -f "$raw" "$err"
-    grunt_fail "timed out after ${GRUNT_TIMEOUT}s. Split the request into smaller calls."
+    grunt_fail "timed out after ${limit}s."
   fi
   if (( status != 0 )); then
     local detail
@@ -55,6 +56,7 @@ grunt_worker() {
   fi
 
   WORKER_TEXT="$(jq -r 'select(.type == "text") | .part.text' "$raw")"
+  WORKER_SESSION="$(jq -r '.sessionID // empty' "$raw" | head -1)"
   WORKER_IN="$(jq -s '[.[] | select(.type == "step_finish") | .part.tokens.input // 0] | add // 0' "$raw")"
   WORKER_OUT="$(jq -s '[.[] | select(.type == "step_finish") | .part.tokens.output // 0] | add // 0' "$raw")"
 
