@@ -113,4 +113,12 @@ Workflow and tooling notes that transfer across projects. Project-specific bug f
 
 ---
 
+## 4. The shell is zsh, so unquoted variables don't split
+
+**Struggle:** A bash-style loop like `for s in "a b" "c d"; do set -- $s; cmd "$1" "$2"; done` breaks. The shell tool runs zsh, which leaves `$s` whole, so `$1` gets `"a b"` and `$2` is empty. Subagents run in the same zsh and hit the same bug.
+
+**Resolution:** Split explicitly with `${=s}` or a real array (`args=(a b); cmd "${args[@]}"`). For a longer bash script, run it with `bash -c '...'` or `bash script.sh`. When a loop looks wrong, call the command once with literal arguments to check.
+
+---
+
 *Add an entry here only when the struggle and fix would help in an unrelated repo. Otherwise use the project's own AGENT.md, or skip.*
