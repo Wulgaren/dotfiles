@@ -43,8 +43,8 @@ task="$2"
 shift 2
 [[ "$task" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "task name must be lowercase letters, digits and dashes: $task"
 
-tmp_root="${TMPDIR:-/tmp}"
-worktree="${tmp_root%/}/grunt/$(basename "$root")-$task"
+cache_root="${XDG_CACHE_HOME:-$HOME/.cache}"
+worktree="${cache_root%/}/grunt/$(basename "$root")-$task"
 branch="grunt/$task"
 
 # Per-worktree state file: base commit and worker session.

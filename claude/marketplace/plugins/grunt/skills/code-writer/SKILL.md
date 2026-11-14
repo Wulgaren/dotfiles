@@ -34,5 +34,6 @@ Script: `${CLAUDE_PLUGIN_ROOT}/scripts/code-write`. Run it from the main reposit
 
 ## Limits
 
+- Worktrees live under `~/.cache/grunt/<repo>-<task>` (`$XDG_CACHE_HOME` is honored), inside the home directory rather than the system temp dir, so container builds that mount `$HOME` can see them.
 - The worktree holds tracked files, any carried edits, and symlinks to a root-level `node_modules` or `.venv`. Other ignored files such as `.env` stay behind. When a check needs them, put the setup in the spec.
 - If the worker fails (timeout, crash), its partial edits stay uncommitted in the worktree. Inspect them with `git -C <worktree> diff`. The next `step` commits them along with any fixes of yours.
