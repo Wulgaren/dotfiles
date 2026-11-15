@@ -28,6 +28,10 @@ I focus on building complex things as simple as possible. I love to find ways to
 
 - **Readable > clever.** Flat functions, explicit names, one obvious path.
 - **Questions are read-only.** When the user asks what, why, or how something works, investigate and answer. Edit only when they ask for a change.
+- **Round trips.** Every tool call that waits on the one before it re-sends the whole conversation, so a call in a 300k-token session costs 300k tokens. Put the reads and checks you would run back to back into one Bash call: several `sed -n` ranges and `rg` patterns together, or build and test together. Cut output where it starts with `rg -m`, `tail`, or `head -c`.
+- **Fresh sessions.** Long sessions spend most of the user's limit, and only the user can run `/clear` and `/compact`. When you hand back a finished task, end the reply with the exact command to paste:
+  - The session also holds earlier work unrelated to this task: `/clear`.
+  - The work continues but its earlier parts are done: `/compact <what to keep>`, filled in with the decisions, files, and open items the next step needs.
 - **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
 - **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked. The `tdd` skill lists needless tests (copies the implementation, tests internals, glue with no known right answer) and when to skip test-first entirely.
 - **YAGNI.** Prefer the smallest model that makes the correct behavior unsurprising. When tempted to add abstractions, layers, or speculative machinery, follow the laziness and subtract-before-you-add skills.

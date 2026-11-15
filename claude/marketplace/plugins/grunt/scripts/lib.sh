@@ -56,7 +56,8 @@ run_backend() {
     return 1
   fi
 
-  timeout "$limit" "${cmd[@]}" "$prompt" >"$raw" 2>"$err" || status=$?
+  # The workers load Claude Code hooks too. GRUNT_OFF=1 lets them read whole files.
+  GRUNT_OFF=1 timeout "$limit" "${cmd[@]}" "$prompt" >"$raw" 2>"$err" || status=$?
 
   if (( status == 124 )); then
     RUN_ERROR="timed out after ${limit}s"
