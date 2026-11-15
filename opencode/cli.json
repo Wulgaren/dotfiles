@@ -9,7 +9,7 @@
   },
   "session": {
     "permissions": "autoaccept",
-    "sidebar": "auto",
+    "sidebar": "hide",
     "grouping": "auto",
     "tps": true,
     "verbosity": "medium"
