@@ -8,7 +8,7 @@ alt - return : open -a Ghostty
 
 alt - 3 : open -a "Discord"
 alt - 4 : open -a Music
-alt - 5 : open -a "Grok Bot"
+alt - 5 : open -a "OpenBot"
 alt - 6 : open -a Photos
 alt - 7 : open -a Reminders
 alt - 8 : open -a Notes
