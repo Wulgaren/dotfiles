@@ -5,7 +5,7 @@ Routes the expensive, low-thinking parts of Claude Code work to a cheap worker m
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, and `finish` applies the whole task to the working tree as uncommitted edits.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, GPT-6.1 Sol reviews the finished commit series, and `finish` applies the whole task to the working tree as uncommitted edits.
 
 The read guard works in Claude Code, Cursor, and OpenCode. The scripts and skills are shared. Only the hook wiring differs.
 
@@ -46,6 +46,9 @@ Set in `~/.claude/settings.json` under `env`:
 | `GRUNT_CODER_MODEL` | `opencode-go/deepseek-v4.1-flash#high` | code-write model |
 | `GRUNT_CODER_SWITCH_AFTER` | `220` | Seconds before a code-write step switches to Cursor. Cursor then gets the rest of the 540s |
 | `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, both workers together, under Claude's 600s Bash limit |
+| `GRUNT_REVIEW_MODEL` | `openai/gpt-6.1-sol#medium` | Whole-task review model |
+| `GRUNT_REVIEW_SWITCH_AFTER` | `240` | Seconds before a review switches to Cursor |
+| `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds per review, both workers together |
 | `GRUNT_FALLBACK_MODEL` | `auto` | Cursor `agent` model |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |

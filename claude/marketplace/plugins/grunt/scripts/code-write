@@ -5,6 +5,7 @@
 #
 #   code-write start  <task> [--with-uncommitted | --from-head]
 #   code-write step   <task> --spec "<what to build>" --check "<cmd>" [--continue]
+#   code-write review <task> [--intent "<what the user asked for>"]
 #   code-write finish <task>
 #   code-write abort  <task>
 #
@@ -23,6 +24,7 @@ usage() {
 Usage:
   code-write start  <task> [--with-uncommitted | --from-head]
   code-write step   <task> --spec "<what to build>" --check "<cmd>" [--continue]
+  code-write review <task> [--intent "<what the user asked for>"]
   code-write finish <task>
   code-write abort  <task>
 EOF
@@ -190,6 +192,63 @@ $check
   grunt_log "code-write" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
 }
 
+review() {
+  local intent=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --intent) [[ $# -ge 2 ]] || usage; intent="$2"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  require_worktree
+
+  # A read-only reviewer sees the whole series at once, so it can judge the
+  # task rather than each step in isolation. No access flag, so it reads files
+  # but cannot edit or commit.
+  local base log diff prompt verdict
+  base="$(cat "$(state_file base)")"
+  log="$(git -C "$worktree" log --format='%h %s' "$base"..HEAD)"
+  diff="$(git -C "$worktree" diff "$base" HEAD -- .)"
+  prompt="You review one finished task in this repository before it reaches the user's tree. Judge the code, not the author's summary.
+
+Read as much surrounding code as you need. Report only actionable problems: correctness bugs, missed cases, security issues, broken repo conventions, dead code, tests that prove nothing. Skip style opinions and praise.
+
+Each finding needs the file and line, why it matters, and the smallest fix. Order the findings by severity. When the series is sound, say so in one sentence.
+
+The planner's intent:
+${intent:-(not given)}
+
+<commits>
+$log
+</commits>
+
+<diff>
+$diff
+</diff>
+
+End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
+
+  cd "$worktree"
+  grunt_worker "$GRUNT_REVIEW_MODEL" "$GRUNT_REVIEW_SWITCH_AFTER" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"
+  printf '## review (%s)\n%s\n\n' "$WORKER_BACKEND" "$WORKER_TEXT"
+  grunt_log "review" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
+
+  verdict="$(printf '%s\n' "$WORKER_TEXT" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
+  case "$verdict" in
+    "VERDICT: clean")
+      printf 'review: clean\n'
+      ;;
+    "VERDICT: changes-needed")
+      printf '\nreview: changes needed. Fix the findings yourself in the worktree, or send them back with:\n  code-write step %s --continue --spec "<review notes>" --check "<cmd>"\nThen review again.\n' "$task" >&2
+      exit 1
+      ;;
+    *)
+      printf '\nreview: the reviewer gave no verdict line. Treat the task as unreviewed and rerun.\n' >&2
+      exit 1
+      ;;
+  esac
+}
+
 finish() {
   require_worktree
   has_changes && commit_all "orchestrator edits"
@@ -222,6 +281,7 @@ abort() {
 case "$command" in
   start) start "$@" ;;
   step) step "$@" ;;
+  review) review "$@" ;;
   finish) finish "$@" ;;
   abort) abort ;;
   *) usage ;;
