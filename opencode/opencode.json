@@ -26,6 +26,14 @@
     { "action": "shell", "resource": "find */private/var/folders/* -delete*", "effect": "allow" },
     { "action": "shell", "resource": "find *$TMPDIR* -delete*", "effect": "allow" }
   ],
+  "compaction": {
+    "auto": true,
+    "keep": { "tokens": 25000 },
+    "buffer": 700000
+  },
+  "experimental": {
+    "todo": true
+  },
   "providers": {
     "deeprelay": {
       "name": "deeprelay",

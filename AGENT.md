@@ -24,6 +24,12 @@ I focus on building complex things as simple as possible. I love to find ways to
 
 8. **_Cleanup_ before handoff.** When step 7 is green, follow the `cleanup` skill before handing control back. Skip only when this turn had no code edits. Done when cleanup finished (or correctly skipped) and control is handed back for the user to test.
 
+## Requirements ledger
+
+Before the first edit, open a numbered list of every requirement in the user's messages. Copy UI wording, ordering and "do X, not Y" details verbatim into it. Hold the list as todos when the todo tool is available, so it survives compaction.
+
+The ledger closes when every line reads met, not met, or changed. A line that needs a cheaper or different design says so, and you ask before building it.
+
 ## Preferences
 
 - **Readable > clever.** Flat functions, explicit names, one obvious path.
