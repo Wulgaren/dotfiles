@@ -15,9 +15,8 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 # Dependency folders linked from the main tree so checks run in the worktree.
-# Committing and diffing exclude them.
+# Each is added to info/exclude, so git status and commits skip it.
 LINKED_DIRS=(node_modules .venv)
-EXCLUDES=(":(exclude)node_modules" ":(exclude).venv")
 
 usage() {
   cat >&2 <<EOF
@@ -58,13 +57,13 @@ require_worktree() {
 
 commit_all() {
   local message="$1"
-  git -C "$worktree" add -A -- . "${EXCLUDES[@]}"
+  git -C "$worktree" add -A -- .
   git -C "$worktree" -c commit.gpgsign=false -c user.name=grunt -c user.email=grunt@localhost \
     commit -q --no-verify --allow-empty -m "$message"
 }
 
 has_changes() {
-  [[ -n "$(git -C "$worktree" status --porcelain -- . "${EXCLUDES[@]}")" ]]
+  [[ -n "$(git -C "$worktree" status --porcelain -- .)" ]]
 }
 
 start() {
@@ -94,8 +93,17 @@ start() {
     (cd "$root" && git ls-files --others --exclude-standard -z | tar --null -T - -cf -) | tar -xf - -C "$worktree"
   fi
 
+  # A linked folder is untracked, but git status still lists it. info/exclude
+  # keeps it out of git status and commits. The file is shared with the main
+  # repository, which is harmless for folders nobody commits.
+  local exclude
+  exclude="$(git -C "$worktree" rev-parse --git-path info/exclude)"
+  mkdir -p "$(dirname "$exclude")"
+
   for dir in "${LINKED_DIRS[@]}"; do
-    [[ -d "$root/$dir" && ! -e "$worktree/$dir" ]] && ln -s "$root/$dir" "$worktree/$dir"
+    [[ -d "$root/$dir" && ! -e "$worktree/$dir" ]] || continue
+    ln -s "$root/$dir" "$worktree/$dir"
+    grep -qxF "/$dir" "$exclude" 2>/dev/null || printf '/%s\n' "$dir" >> "$exclude"
   done
 
   commit_all "grunt base"
@@ -176,7 +184,7 @@ $check
   rm -f "$check_out"
 
   local diff
-  diff="$(git -C "$worktree" diff "$before" HEAD -- . "${EXCLUDES[@]}")"
+  diff="$(git -C "$worktree" diff "$before" HEAD -- .)"
   printf '## diff\n%s\n' "${diff:-(no changes)}"
 
   grunt_log "code-write" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
@@ -188,7 +196,7 @@ finish() {
 
   local patch
   patch="$(mktemp)"
-  git -C "$worktree" diff --binary "$(cat "$(state_file base)")" HEAD -- . "${EXCLUDES[@]}" > "$patch"
+  git -C "$worktree" diff --binary "$(cat "$(state_file base)")" HEAD -- . > "$patch"
 
   if [[ -s "$patch" ]]; then
     if ! git -C "$root" apply --binary "$patch"; then
