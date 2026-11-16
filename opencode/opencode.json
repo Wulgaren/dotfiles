@@ -52,5 +52,9 @@
         }
       }
     }
-  }
+  },
+  "plugins": [
+    "@yassirh/opencode-codex-limits-plugin",
+    "@mellena1/opencode-go-usage"
+  ]
 }

@@ -9,7 +9,7 @@
   },
   "session": {
     "permissions": "autoaccept",
-    "sidebar": "hide",
+    "sidebar": "auto",
     "grouping": "auto",
     "tps": true,
     "verbosity": "medium"
@@ -17,5 +17,8 @@
   "prompt": {
     "image_preview": false
   },
-  "highlights": true
+  "highlights": true,
+  "plugins": [
+      "opencode-session-usage"
+  ]
 }

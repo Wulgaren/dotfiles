@@ -209,6 +209,7 @@ alias most_cpu_usage='~/Coding/scripts/ai/instant-ai.sh cpu'
 
 alias concord='~/Coding/concord/target/release/concord'
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+export PATH="$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH"
 
 alias music-tags='~/Coding/music-tags/music_tags.py'
 alias dp='dphoto'
