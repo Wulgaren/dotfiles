@@ -1,6 +1,6 @@
 {
   "name": "grunt",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Delegates bulk reads and planned coding steps to a cheap worker model while the main model plans and reviews",
   "author": {
     "name": "natios"

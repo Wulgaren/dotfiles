@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
-# PreToolUse guard. Blocks whole-file reads over GRUNT_MIN_LINES (default 350)
-# and points Claude at the bulk-reader skill instead. Targeted reads (Read with
-# offset/limit, piped shell reads) pass through, because they are cheap.
+# PreToolUse guard for reads. Two rules:
+#
+# 1. Whole-file reads over GRUNT_MIN_LINES (default 350) are denied and pointed
+#    at the bulk-reader skill. Same rule for the Read tool and a bare
+#    "cat/head/tail <file>" command.
+# 2. Read-shaped shell output over GRUNT_MAX_BYTES (default 6000) is capped:
+#    the command still runs once, its stdout is captured, and only the first
+#    GRUNT_MAX_BYTES reach the model with a marker that says it was cut. This
+#    covers ranges ("sed -n 100,260p f") and chained commands, which the deny
+#    rule cannot see.
 #
 # Exits 2 to deny the tool call; stderr becomes the reason Claude sees.
+# Prints updatedInput JSON to allow the call with a capped command.
 # Any internal failure exits 0 (allow). A broken guard must not stop all work.
 
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIN_LINES="${GRUNT_MIN_LINES:-350}"
+MAX_BYTES="${GRUNT_MAX_BYTES:-6000}"
 LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 
 [[ "${GRUNT_OFF:-}" == "1" ]] && exit 0
@@ -61,11 +70,13 @@ deny() {
   exit 2
 }
 
+# Denies a whole-file read of a generated file or one over MIN_LINES. Returns
+# (does not exit) when the file is fine or too small to matter.
 check_file() {
   local path="$1"
 
-  [[ -f "$path" ]] || exit 0
-  is_binary "$path" && exit 0
+  [[ -f "$path" ]] || return 0
+  is_binary "$path" && return 0
 
   if skip_reason "$path"; then
     log_decision "blocked-generated" "$path" "" ""
@@ -74,7 +85,7 @@ check_file() {
 
   local lines bytes
   lines="$(line_count "$path")"
-  [[ -z "$lines" || "$lines" -le "$MIN_LINES" ]] && exit 0
+  [[ -z "$lines" || "$lines" -le "$MIN_LINES" ]] && return 0
 
   bytes="$(file_size "$path")"
   log_decision "blocked-bulk" "$path" "$lines" "$bytes"
@@ -90,6 +101,114 @@ Rules:
 - Keep debugging, design decisions, and safety-critical code in the main model."
 }
 
+# Bytes per line of a readable file, or empty when the file cannot be read.
+bytes_per_line() {
+  local f="$1" lines bytes
+  [[ -f "$f" ]] || return 0
+  lines="$(line_count "$f")"
+  bytes="$(file_size "$f")"
+  [[ -z "$lines" || -z "$bytes" ]] && return 0
+  (( lines < 1 )) && lines=1
+  printf '%s\n' "$(( (bytes + lines - 1) / lines ))"
+}
+
+# Lines a "sed -n A,Bp" segment asks for, or empty when it has no range.
+sed_lines() {
+  local seg="$1"
+  if [[ "$seg" =~ -n[[:space:]]*[\"\']?([0-9]+),([0-9]+)p ]]; then
+    printf '%s\n' "$(( BASH_REMATCH[2] - BASH_REMATCH[1] + 1 ))"
+  fi
+}
+
+# Lines a "head/tail" segment asks for: -n N, -N, or the 10-line default.
+head_lines() {
+  local seg="$1"
+  if [[ "$seg" =~ (^|[[:space:]])-n[[:space:]]*([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  elif [[ "$seg" =~ (^|[[:space:]])-([0-9]+)([[:space:]]|$) ]]; then
+    printf '%s\n' "${BASH_REMATCH[2]}"
+  else
+    printf '10\n'
+  fi
+}
+
+# Last non-flag word of a segment: the file the command reads.
+segment_file() {
+  local w words=() file_hint="" seg="$1"
+  read -r -a words <<< "$seg"
+  for w in "${words[@]:1}"; do
+    [[ "$w" == -* ]] && continue
+    [[ "$w" =~ ^[0-9]+$ ]] && continue
+    file_hint="$w"
+  done
+  printf '%s\n' "${file_hint:-}"
+}
+
+# Estimated stdout of the read-shaped commands in a shell string, as
+# "<lines> <bytes>". Chained segments are summed because their stdout is
+# concatenated. Over-estimating is cheap: the cap wrapper is transparent for
+# small output, so this only decides whether to wrap.
+estimate_reads() {
+  local cmd="$1" segments seg word file lines bpl
+  local total_lines=0 total_bytes=0
+  segments="$(printf '%s' "$cmd" | sed -E 's/(&&|\|\||;)/\n/g')"
+
+  while IFS= read -r seg; do
+    seg="${seg#"${seg%%[![:space:]]*}"}"
+    word="${seg%%[[:space:]]*}"
+    file="$(segment_file "$seg")"
+    bpl="$(bytes_per_line "$file")"
+
+    case "$word" in
+      sed)
+        lines="$(sed_lines "$seg")"
+        [[ -z "$lines" ]] && continue
+        # No readable file: assume a wide line rather than skipping the range.
+        [[ -z "$bpl" ]] && bpl=90
+        ;;
+      cat|head|tail)
+        [[ -z "$bpl" ]] && continue
+        if [[ "$word" == cat ]]; then
+          lines="$(line_count "$file")"
+        else
+          lines="$(head_lines "$seg")"
+        fi
+        [[ -z "$lines" ]] && continue
+        ;;
+      *)
+        continue ;;
+    esac
+
+    total_lines=$(( total_lines + lines ))
+    total_bytes=$(( total_bytes + lines * bpl ))
+  done <<< "$segments"
+
+  printf '%s %s\n' "$total_lines" "$total_bytes"
+}
+
+# Allows the call with the command wrapped so stdout is capped at MAX_BYTES.
+# stderr is untouched, and the original exit status is preserved.
+cap_command() {
+  local cmd="$1" wrapped reason
+  wrapped="__grunt_out=\$(mktemp)
+{ $cmd
+} >\"\$__grunt_out\"
+__grunt_rc=\$?
+__grunt_size=\$(wc -c <\"\$__grunt_out\" | tr -d ' ')
+head -c $MAX_BYTES \"\$__grunt_out\"
+if [ \"\$__grunt_size\" -gt $MAX_BYTES ]; then
+  printf '\\n[grunt: stdout cut at $MAX_BYTES of %s bytes, the rest is gone.\\n' \"\$__grunt_size\"
+  printf 'For more: rerun the exact range (e.g. sed -n 61,140p <file>) or ask a worker: %s/scripts/bulk-read --question \"<question>\" --paths <files>. GRUNT_OFF=1 disables this.]\\n' \"$ROOT\"
+fi
+rm -f \"\$__grunt_out\"
+exit \$__grunt_rc"
+
+  reason="stdout above $MAX_BYTES bytes: capped, the command output is cut and marked"
+  jq -nc --arg cmd "$wrapped" --arg reason "$reason" \
+    '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: $reason, updatedInput: {command: $cmd}}}'
+  exit 0
+}
+
 case "$tool" in
   Read)
     file="$(jq -r '.tool_input.file_path // empty' <<<"$input")"
@@ -102,18 +221,29 @@ case "$tool" in
   Bash)
     cmd="$(jq -r '.tool_input.command // empty' <<<"$input")"
     [[ -z "$cmd" ]] && exit 0
-    # Pipes, redirects, chaining mean the read is targeted. Let them through.
-    [[ "$cmd" == *"|"* || "$cmd" == *">"* || "$cmd" == *"<"* || "$cmd" == *";"* || "$cmd" == *'$('* ]] && exit 0
-    [[ "$cmd" =~ ^[[:space:]]*(cat|head|tail|less|more)[[:space:]] ]] || exit 0
 
-    # Only a command with exactly one plain argument is a whole-file read.
-    read -r -a words <<< "$cmd"
-    args=()
-    for w in "${words[@]:1}"; do
-      [[ "$w" == -* ]] || args+=("$w")
-    done
-    [[ "${#args[@]}" -eq 1 ]] || exit 0
-    check_file "${args[0]}"
+    # A bare whole-file read gets the Read-tool rule, so the file stays out of
+    # context entirely instead of arriving cut in half.
+    if [[ "$cmd" != *"|"* && "$cmd" != *">"* && "$cmd" != *"<"* && "$cmd" != *";"* && "$cmd" != *'$('* ]]; then
+      if [[ "$cmd" =~ ^[[:space:]]*(cat|head|tail|less|more)[[:space:]] ]]; then
+        read -r -a words <<< "$cmd"
+        args=()
+        for w in "${words[@]:1}"; do
+          [[ "$w" == -* ]] && continue
+          args+=("$w")
+        done
+        [[ "${#args[@]}" -eq 1 ]] && check_file "${args[0]}"
+      fi
+    fi
+
+    # Everything else that reads: cap the output. Re-wrapping our own command
+    # would nest temp files and markers for no gain.
+    [[ "$cmd" == *"__grunt_out"* ]] && exit 0
+    read -r est_lines est_bytes <<< "$(estimate_reads "$cmd")"
+    if (( ${est_lines:-0} > 0 && ${est_bytes:-0} > MAX_BYTES )); then
+      log_decision "capped-read" "$(printf '%s' "$cmd" | head -c 80)" "$est_lines" "$est_bytes"
+      cap_command "$cmd"
+    fi
     ;;
 esac
 
