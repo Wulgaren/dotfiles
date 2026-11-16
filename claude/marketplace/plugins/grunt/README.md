@@ -7,6 +7,16 @@ Two paths:
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
 - **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, and `finish` applies the whole task to the working tree as uncommitted edits.
 
+The read guard works in Claude Code, Cursor, and OpenCode. The scripts and skills are shared. Only the hook wiring differs.
+
+| Agent | Skills | Guard |
+|---|---|---|
+| Claude Code | plugin `skills/` | plugin `hooks/hooks.json` |
+| Cursor | `~/.cursor/skills` (dotfiles fan-out) | `.cursor/hooks/grunt-guard-read` via `preToolUse` |
+| OpenCode | `~/.claude/skills` and `~/.agents/skills` | `opencode/plugins/grunt/index.ts` |
+
+`guard-read` owns the read rules for all three. The Cursor adapter and the OpenCode plugin send it a Claude-shaped payload and translate the answer back.
+
 A `PreToolUse` hook routes reads two ways. Whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) pass through.
 
 Shell reads that the block rule cannot see, such as `sed -n 100,260p f` or `cat a; sed -n 1,140p b`, are capped at `GRUNT_MAX_BYTES` (default 6000). The hook rewrites the command so it still runs once, keeps the first 6000 bytes of stdout, and appends a marker with the full size plus the two ways to get the rest: an exact range or a bulk-read question. stderr and the exit code pass through unchanged. The rewrite returns `permissionDecision: allow`, so a capped command does not go through the permission prompt.
@@ -19,6 +29,8 @@ claude plugin install grunt@natios
 ```
 
 The marketplace lives in this dotfiles repo under `claude/marketplace` and is linked to `~/.claude/local-marketplace`.
+
+Cursor and OpenCode need no install step. The plugin skills are linked into `.cursor/skills`, `link.sh sync` fans them out to the agent config directories, and OpenCode discovers `opencode/plugins/grunt` from the linked config directory.
 
 ## Config
 

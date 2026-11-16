@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Cursor adapter for grunt's guard-read.
+#
+# guard-read speaks Claude Code's hook protocol: exit 2 with the reason on
+# stderr to deny, and a nested hookSpecificOutput JSON to allow with a rewritten
+# command. Cursor's preToolUse wants flat JSON on every decision. This translates
+# between the two so the guard logic lives in one place.
+#
+# Fails open on any internal error, same as guard-read.
+
+set -uo pipefail
+
+SCRIPT="${GRUNT_GUARD:-$HOME/.claude/local-marketplace/plugins/grunt/scripts/guard-read}"
+
+allow() {
+  printf '{"permission":"allow"}\n'
+  exit 0
+}
+
+[[ -x "$SCRIPT" ]] || allow
+
+out="$(mktemp)"
+err="$(mktemp)"
+trap 'rm -f "$out" "$err"' EXIT
+
+"$SCRIPT" >"$out" 2>"$err"
+rc=$?
+
+case "$rc" in
+  0)
+    if [[ -s "$out" ]]; then
+      jq -c 'if .hookSpecificOutput.updatedInput
+             then {permission: "allow", updated_input: .hookSpecificOutput.updatedInput}
+             else {permission: "allow"}
+             end' "$out" 2>/dev/null || allow
+    else
+      allow
+    fi
+    ;;
+  2)
+    message="$(cat "$err")"
+    jq -nc --arg message "$message" \
+      '{permission: "deny", user_message: $message, agent_message: $message}'
+    ;;
+  *)
+    allow
+    ;;
+esac

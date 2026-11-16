@@ -10,9 +10,12 @@
 #    covers ranges ("sed -n 100,260p f") and chained commands, which the deny
 #    rule cannot see.
 #
-# Exits 2 to deny the tool call; stderr becomes the reason Claude sees.
+# Exits 2 to deny the tool call; stderr becomes the reason the agent sees.
 # Prints updatedInput JSON to allow the call with a capped command.
 # Any internal failure exits 0 (allow). A broken guard must not stop all work.
+#
+# Speaks Claude Code's hook protocol. Cursor's Shell tool is treated as Bash;
+# .cursor/hooks/grunt-guard-read adapts the response for Cursor's preToolUse.
 
 set -uo pipefail
 
@@ -211,14 +214,14 @@ exit \$__grunt_rc"
 
 case "$tool" in
   Read)
-    file="$(jq -r '.tool_input.file_path // empty' <<<"$input")"
+    file="$(jq -r '.tool_input.file_path // .tool_input.path // empty' <<<"$input")"
     offset="$(jq -r '.tool_input.offset // empty' <<<"$input")"
     limit="$(jq -r '.tool_input.limit // empty' <<<"$input")"
     [[ -z "$file" ]] && exit 0
     [[ -n "$offset" || -n "$limit" ]] && exit 0
     check_file "$file"
     ;;
-  Bash)
+  Bash|Shell)
     cmd="$(jq -r '.tool_input.command // empty' <<<"$input")"
     [[ -z "$cmd" ]] && exit 0
 

@@ -7,7 +7,7 @@ description: Hand a planned implementation step to the grunt worker (DeepSeek, o
 
 You are the planner and reviewer. The worker writes the code. Each _step_ is a written _spec_ in, a committed diff out. You review every diff before the next step, and the finished task lands in the user's working tree as uncommitted edits.
 
-Script: `${CLAUDE_PLUGIN_ROOT}/scripts/code-write`. Run it from the main repository. Give every `step` call a Bash timeout of 600000.
+Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it from the main repository. Give every `step` call a Bash timeout of 600000.
 
 ## Loop
 

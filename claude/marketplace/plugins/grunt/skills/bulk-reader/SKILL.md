@@ -22,7 +22,7 @@ Sends files to a cheap worker model and returns a short bullet answer. The files
 ## Usage
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/bulk-read --question "How does token refresh work?" --paths src/auth.ts src/client.ts
+~/.claude/local-marketplace/plugins/grunt/scripts/bulk-read --question "How does token refresh work?" --paths src/auth.ts src/client.ts
 ```
 
 - One specific question per call. Vague questions produce vague bullets.
