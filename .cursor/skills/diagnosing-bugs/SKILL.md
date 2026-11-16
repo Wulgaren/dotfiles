@@ -123,7 +123,7 @@ If a correct seam exists:
 
 1. Turn the minimised repro into a failing test at that seam.
 2. Watch it fail.
-3. Apply the fix.
+3. Hand the fix to the worker with the `code-writer` skill: the failing test, the confirmed cause and the files to change are the spec.
 4. Watch it pass.
 5. Re-run the Phase 1 feedback loop against the original (un-minimised) scenario.
 

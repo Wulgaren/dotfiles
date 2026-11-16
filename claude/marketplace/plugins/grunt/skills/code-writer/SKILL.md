@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: Hand a planned implementation step to the grunt worker (DeepSeek, or Cursor Auto when DeepSeek is slow), which edits files in a git worktree while you write the spec and review the diff. GPT-6.1 Sol then reviews the finished commit series before it lands. Use for any step that writes new code or spans several files. Keep debugging, security, money and migration code, and few-line edits for yourself.
+description: Hand a planned implementation step to the grunt worker (DeepSeek, or Cursor Auto when DeepSeek is slow), which edits files in a git worktree while you write the spec and review the diff. GPT-6.1 Sol then reviews the finished commit series before it lands. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines.
 ---
 
 # code-writer

@@ -45,6 +45,7 @@ The ledger closes when every line reads met, not met, or changed. A line that ne
   - `unslop` on every message, including intermediate ones, not just the final answer. Run its checklist before you send each message. Matching the surrounding style does not count, and a dense house style does not override it.
   - `cleanup` after code edits, before handoff.
   - `tdd` before behaviour changes.
+  - `code-writer` for every step that writes new code, including the fix that ends a debugging session. Diagnosis, probe edits and throwaway repro scripts stay with you; the fix goes to the worker, even when it is a few lines.
   - The `principle-*` skills when debugging, under context pressure, refactoring, or sequencing an addition.
 - If you wrote prose without a `unslop` call this turn, stop, load the skill, and rewrite it before sending.
 
