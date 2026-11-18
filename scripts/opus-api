@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Start Claude Code on a real Anthropic model using an API key from the Claude
+# Console, so the request bills to API credits instead of the subscription quota.
+#
+#   opus-api                      Opus 5.5 on the API key
+#   opus-api --model claude-sonnet-5-5
+#
+# The API key bills per token at list rates. The subscription (a team seat) has
+# its own weekly cap, so this path keeps working when that cap is used up.
+#
+# ~/.claude/settings.json points every model at entrim, so this clears those
+# values for one process. Empty strings win over the settings file and leave the
+# rest of your settings (hooks, plugins, status line) loaded.
+set -euo pipefail
+
+KEY_FILE="$HOME/.config/anthropic-api/key"
+if [[ ! -r "$KEY_FILE" ]]; then
+  echo "opus-api: no API key at $KEY_FILE" >&2
+  echo "opus-api: create a key at https://console.anthropic.com/settings/keys, then:" >&2
+  echo "opus-api:   mkdir -p ~/.config/anthropic-api && printf %s 'sk-ant-...' > $KEY_FILE && chmod 600 $KEY_FILE" >&2
+  exit 1
+fi
+KEY="$(tr -d '[:space:]' <"$KEY_FILE")"
+if [[ -z "$KEY" ]]; then
+  echo "opus-api: $KEY_FILE is empty" >&2
+  exit 1
+fi
+
+MODEL="${OPUS_API_MODEL:-claude-opus-5-5}"
+
+OVERRIDE=$(printf '{"env":{%s}}' \
+  '"ANTHROPIC_BASE_URL":"","ANTHROPIC_AUTH_TOKEN":"","ANTHROPIC_API_KEY":"","ANTHROPIC_MODEL":"","ANTHROPIC_DEFAULT_OPUS_MODEL":"","ANTHROPIC_DEFAULT_SONNET_MODEL":"","ANTHROPIC_DEFAULT_HAIKU_MODEL":"","ANTHROPIC_SMALL_FAST_MODEL":""')
+
+unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_MODEL
+unset ANTHROPIC_DEFAULT_OPUS_MODEL ANTHROPIC_DEFAULT_SONNET_MODEL
+unset ANTHROPIC_DEFAULT_HAIKU_MODEL ANTHROPIC_SMALL_FAST_MODEL
+
+# An API key outranks the saved subscription login, so no /logout is needed.
+export ANTHROPIC_API_KEY="$KEY"
+
+exec claude --settings "$OVERRIDE" --model "$MODEL" "$@"

@@ -1,7 +1,8 @@
 {
   "$schema": "https://opencode.ai/v2/cli.json",
   "theme": {
-    "name": "system"
+    "name": "system",
+    "mode": "system"
   },
   "animations": true,
   "attention": {
@@ -20,5 +21,13 @@
   "highlights": true,
   "plugins": [
       "opencode-session-usage"
-  ]
+  ],
+  "tabs": {
+    "mode": "auto",
+    "layout": "horizontal",
+    "indicators": "status"
+  },
+  "diffs": {
+    "view": "auto"
+  }
 }

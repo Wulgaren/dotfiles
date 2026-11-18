@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Start Claude Code on entrim's DeepSeek V4.1 Flash instead of Opus.
+#
+# This is `claude` with entrim as the endpoint and DeepSeek mapped onto every
+# model alias, which is what ~/.claude/settings.json already does. Kept as a
+# command so plain `claude` can go back to Anthropic.
+#
+#   deepseek                     interactive session
+#   deepseek -p "explain this"   one-shot
+#   deepseek --model zai-org/GLM-5.3   any other entrim model
+set -euo pipefail
+
+# The key lives here, not in this repo. See ~/.config/entrim/key.
+KEY_FILE="$HOME/.config/entrim/key"
+if [[ ! -r "$KEY_FILE" ]]; then
+  echo "deepseek: no API key at $KEY_FILE" >&2
+  echo "deepseek: write your entrim key into that file, then chmod 600 it" >&2
+  exit 1
+fi
+KEY="$(tr -d '[:space:]' <"$KEY_FILE")"
+if [[ -z "$KEY" ]]; then
+  echo "deepseek: $KEY_FILE is empty" >&2
+  exit 1
+fi
+
+MODEL="${DEEPSEEK_MODEL:-deepseek-ai/DeepSeek-V4.1-Flash-1017}"
+
+export ANTHROPIC_BASE_URL="https://api.entrim.ai"
+export ANTHROPIC_AUTH_TOKEN="$KEY"
+export ANTHROPIC_MODEL="$MODEL"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="$MODEL"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="$MODEL"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL"
+export ANTHROPIC_SMALL_FAST_MODEL="$MODEL"
+# entrim's DeepSeek takes 1M input tokens. Claude Code cannot read that from the
+# model ID, so it would otherwise assume a default window and compact early.
+export CLAUDE_CODE_MAX_CONTEXT_TOKENS="${DEEPSEEK_CONTEXT:-1000000}"
+
+exec claude "$@"

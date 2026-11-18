@@ -54,3 +54,6 @@ qutebrowser/catppuccin/
 __pycache__/
 
 **/.claude/.cc-writes/
+
+# agent CLI state
+.commandcode/

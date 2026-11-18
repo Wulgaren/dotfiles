@@ -2,6 +2,7 @@
 .zshrc.local
 **/nvim-pack-lock.json
 history.jsonl
+.commandcode/
 .codeium
 opencode/service.json
 .cursor/cli-config.json

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Start Claude Code on Sonnet 5.5 using the Claude Console API key, so the
+# request bills to API credits instead of the subscription quota.
+#
+# A wrapper on `opus-api`, which owns loading the key and clearing the
+# settings.json model overrides.
+#
+#   sonnet-api                          Sonnet 5.5 on the API key
+#   sonnet-api --model claude-opus-5-5
+set -euo pipefail
+
+export OPUS_API_MODEL="${SONNET_API_MODEL:-claude-sonnet-5-5}"
+exec opus-api "$@"
