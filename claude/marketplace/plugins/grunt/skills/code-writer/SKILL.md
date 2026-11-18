@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: Hand a planned implementation step to the grunt worker (DeepSeek, or Cursor Auto when DeepSeek is slow), which edits files in a git worktree while you write the spec and review the diff. GPT-6.1 Sol then reviews the finished commit series before it lands. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines.
+description: Hand a planned implementation step to the grunt worker (DeepSeek, run headless inside Claude Code), which edits files in a git worktree while you write the spec and review the diff. GPT-6.1 Sol then reviews the finished commit series before it lands. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines.
 ---
 
 # code-writer
@@ -27,14 +27,13 @@ Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it f
    - Small problems: fix them yourself with Edit on the worktree path. The next `step` or `finish` commits your fix.
    - Big problems: `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`. This resumes the worker's session, so the notes only need to say what to change.
    - If the second try is still wrong, fix it yourself or `code-write abort <task>`.
-
    Done when the diff is one you would have written. Then take the next step.
 
 5. **Review the series.** When every step is accepted, run `code-write review <task> --intent "<one sentence: what the user asked for>"`. GPT-6.1 Sol reads the commit list and the whole task diff and returns findings. Per-step review misses what the steps add up to; this pass catches it before the code reaches the user's tree.
 
    - Findings are claims, like the worker's bullets. Verify each against the code.
    - Small findings: fix them yourself in the worktree.
-   - Larger ones: send them back to the worker with `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`. The fix goes to DeepSeek or Cursor, never to the reviewer.
+   - Larger ones: send them back to the worker with `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`. The fix goes to the worker, never to the reviewer.
 
    Done when the reviewer ends with `VERDICT: clean`. A missing verdict or a failed run is not clean, so rerun it.
 
@@ -44,5 +43,6 @@ Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it f
 
 - Worktrees live under `~/.cache/grunt/<repo>-<task>` (`$XDG_CACHE_HOME` is honored), inside the home directory rather than the system temp dir, so container builds that mount `$HOME` can see them.
 - The worktree holds tracked files, any carried edits, and symlinks to a root-level `node_modules` or `.venv`. Other ignored files such as `.env` stay behind. When a check needs them, put the setup in the spec.
-- DeepSeek gets 160s per step. If it runs out or crashes, Cursor Auto continues on its partial edits with the rest of the time, and the step output names the backend. `--continue` resumes whichever worker finished the step.
-- If both workers fail, their partial edits stay uncommitted in the worktree. Inspect them with `git -C <worktree> diff`. The next `step` commits them along with any fixes of yours.
+- The worker is a headless Claude session on `GRUNT_CODER_MODEL`, so it sees your CLAUDE.md and hooks and has the same tools you do, minus skills. Its shell writes are fenced to the worktree, and `rm`, `git push`, `sudo` and the other commands in `GRUNT_DENY` come back to it as a refusal; it works around them and says so in its bullets.
+- The worker gets the whole 540s step. A run that times out leaves its partial edits uncommitted in the worktree and exits non-zero with the reason. Inspect them with `git -C <worktree> diff`; the next `step` commits them along with any fixes of yours.
+- `--continue` resumes the worker's session and resends the original spec under your notes, so a resumed worker sees the whole task. A session saved by a backend the plugin no longer uses is dropped with a note on stderr, and the step starts a fresh worker with that same resent spec.

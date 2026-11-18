@@ -52,3 +52,5 @@ build/
 # vendored theme (clone via symlinks.txt note / qutebrowser/catppuccin-README.txt)
 qutebrowser/catppuccin/
 __pycache__/
+
+**/.claude/.cc-writes/

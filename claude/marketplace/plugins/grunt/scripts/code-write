@@ -132,7 +132,7 @@ step() {
   before="$(git -C "$worktree" rev-parse HEAD)"
 
   # --continue resends the original spec with the review notes, so a worker
-  # without the earlier session (after a switch to Cursor) still has the task.
+  # whose session could not be resumed still has the task.
   local session=""
   if (( continue_session )); then
     [[ -s "$(state_file session)" ]] || die "no worker session to continue for '$task'"
@@ -146,9 +146,11 @@ $spec"
   fi
 
   cd "$worktree"
-  grunt_worker "$GRUNT_CODER_MODEL" "$GRUNT_CODER_SWITCH_AFTER" "$GRUNT_CODER_TIMEOUT" edit "You implement one step of a plan in this repository. A reviewer reads your diff when you finish.
+  GRUNT_MAIN_ROOT="$root" \
+  grunt_worker claude "$GRUNT_CODER_MODEL" "$GRUNT_CODER_TIMEOUT" edit "You implement one step of a plan in this repository. A reviewer reads your diff when you finish.
 
 - Work inside this directory. Edit files and run commands. The caller commits, so leave git as it is.
+- Address files by relative path. Absolute paths that point outside this directory are refused.
 - Read the files the spec names before editing, and match the patterns, naming and style of the surrounding code.
 - Nobody answers questions during this run. When the spec is ambiguous, do what the existing code does and record the assumption.
 - Make the smallest change that satisfies the spec.
@@ -174,7 +176,6 @@ $check
   commit_all "step"
 
   printf '## worker (%s)\n' "$WORKER_BACKEND"
-  [[ -n "$WORKER_NOTE" ]] && printf '%s\n' "$WORKER_NOTE"
   printf '%s\n\n' "$WORKER_TEXT"
   if (( check_status == 0 )); then
     printf '## check: pass\n\n'
@@ -229,7 +230,7 @@ $diff
 End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
 
   cd "$worktree"
-  grunt_worker "$GRUNT_REVIEW_MODEL" "$GRUNT_REVIEW_SWITCH_AFTER" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"
+  grunt_worker opencode "$GRUNT_REVIEW_MODEL" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"
   printf '## review (%s)\n%s\n\n' "$WORKER_BACKEND" "$WORKER_TEXT"
   grunt_log "review" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
 

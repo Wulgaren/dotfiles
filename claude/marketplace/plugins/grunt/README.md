@@ -1,11 +1,11 @@
 # grunt
 
-Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: DeepSeek V4.1 Flash through `opencode`. When DeepSeek runs past its switch time or fails, Cursor's `agent` CLI with the Auto model takes over for the rest of the time limit.
+Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: DeepSeek V4.1 Flash inside Claude Code itself, through `claude -p`. The worker is a headless Claude session pointed at the cheap model, so it inherits your CLAUDE.md, hooks and plugins and gets the same tools as the main session.
 
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, GPT-6.1 Sol reviews the finished commit series, and `finish` applies the whole task to the working tree as uncommitted edits.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, GPT-6.1 Sol reviews the finished commit series, `finish` applies the whole task to the working tree as uncommitted edits. The review is the one call that goes through `opencode run`, so a second model family checks the series.
 
 The read guard works in Claude Code, Cursor, and OpenCode. The scripts and skills are shared. Only the hook wiring differs.
 
@@ -15,7 +15,7 @@ The read guard works in Claude Code, Cursor, and OpenCode. The scripts and skill
 | Cursor | `~/.cursor/skills` (dotfiles fan-out) | `.cursor/hooks/grunt-guard-read` via `preToolUse` |
 | OpenCode | `~/.claude/skills` and `~/.agents/skills` | `opencode/plugins/grunt/index.ts` |
 
-`guard-read` owns the read rules for all three. The Cursor adapter and the OpenCode plugin send it a Claude-shaped payload and translate the answer back.
+The scripts and skills are shared across agents, and `guard-read` owns the read rules for all three. Only the hook wiring differs.
 
 A `PreToolUse` hook routes reads two ways. Whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) pass through.
 
@@ -40,18 +40,38 @@ Set in `~/.claude/settings.json` under `env`:
 |---|---|---|
 | `GRUNT_MIN_LINES` | `350` | Block reads above this line count |
 | `GRUNT_MAX_BYTES` | `6000` | Cap on shell read stdout; the command runs once and the cut is marked |
-| `GRUNT_MODEL` | `opencode-go/deepseek-v4.1-flash#low` | bulk-read model |
-| `GRUNT_SWITCH_AFTER` | `60` | Seconds before a bulk-read call switches to Cursor |
-| `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call, both workers together |
-| `GRUNT_CODER_MODEL` | `opencode-go/deepseek-v4.1-flash#high` | code-write model |
-| `GRUNT_CODER_SWITCH_AFTER` | `220` | Seconds before a code-write step switches to Cursor. Cursor then gets the rest of the 540s |
-| `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, both workers together, under Claude's 600s Bash limit |
+| `GRUNT_MODEL` | `deepseek-ai/DeepSeek-V4.1-Flash-1017` | bulk-read model |
+| `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call |
+| `GRUNT_EFFORT` | `low` | Reasoning effort for the `claude` workers |
+| `GRUNT_CODER_MODEL` | `deepseek-ai/DeepSeek-V4.1-Flash-1017` | code-write model |
+| `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, under Claude's 600s Bash limit |
 | `GRUNT_REVIEW_MODEL` | `openai/gpt-6.1-sol#medium` | Whole-task review model |
-| `GRUNT_REVIEW_SWITCH_AFTER` | `240` | Seconds before a review switches to Cursor |
-| `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds per review, both workers together |
-| `GRUNT_FALLBACK_MODEL` | `auto` | Cursor `agent` model |
+| `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds per review |
+| `GRUNT_SANDBOX` | `1` | Fence an editing worker's shell writes |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
+
+`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are model names your Claude Code endpoint serves. The default is the DeepSeek model `ANTHROPIC_MODEL` points at. `GRUNT_REVIEW_MODEL` is an `opencode` model instead, prefixed by its provider.
+
+## The editing worker's reach
+
+An editing worker runs `acceptEdits` with `Bash` allowed, so a permission prompt never stops it and a shell redirect reaches any path on the machine. `git push` is still refused, but `rm` and friends were not, and a probe run of this plugin wrote straight into the main repository over a redirect. Two things fence that in.
+
+- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run: `rm`, `mv`, `git push`, `git reset`, `sudo`, and the rest of the ask rules from `opencode.json`. A denied call comes back to the worker as a refusal, not a prompt.
+- `--settings` turns on Claude Code's OS sandbox with `allowUnsandboxedCommands: false`, so a worker cannot run a command outside it. Sandboxed shell writes fail with `operation not permitted` anywhere outside the worktree, except a path some settings file already grants.
+
+That exception is why the fence does not rest on the sandbox's default boundary. `sandbox.filesystem` has grants (`allowWrite`) and restrictions (`denyWrite`) but no allow-only list, and `allowWrite` merges grants from user settings, project settings and `Edit` allow rules. A single inherited grant reopens its path. `GRUNT_DENY_WRITE` therefore names paths outright, since `denyWrite` outranks every grant. It holds your SSH, AWS and GPG keys, `~/.claude`, `~/Library`, `~/Documents`, the system prefixes, and the main repository itself — a worker that writes there skips review entirely.
+
+The main repository is the boundary worth testing. With a settings file that granted it explicitly, a probe worker's write was still refused:
+
+```
+sandbox.filesystem.allowWrite = ["/private/tmp/grunt-task"]
+sandbox.filesystem.denyWrite  includes "/private/tmp/grunt-task"
+→ operation not permitted
+```
+
+The write fence is not a read fence: a worker can read anything you can, as `claude` itself can.
+
 
 ## Log
 

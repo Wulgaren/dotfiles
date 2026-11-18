@@ -1,9 +1,14 @@
 {
   "name": "grunt",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Delegates bulk reads and planned coding steps to a cheap worker model while the main model plans and reviews",
   "author": {
     "name": "natios"
   },
-  "keywords": ["tokens", "delegation", "cost", "hooks"]
+  "keywords": [
+    "tokens",
+    "delegation",
+    "cost",
+    "hooks"
+  ]
 }
