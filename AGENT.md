@@ -38,6 +38,7 @@ The ledger closes when every line reads met, not met, or changed. A line that ne
 - **Fresh sessions.** Long sessions spend most of the user's limit, and only the user can run `/clear` and `/compact`. When you hand back a finished task, end the reply with the exact command to paste:
   - The session also holds earlier work unrelated to this task: `/clear`.
   - The work continues but its earlier parts are done: `/compact <what to keep>`, filled in with the decisions, files, and open items the next step needs.
+- **Close browser tabs.** Close every tab you open, and any other tab left playing media, once the task using it is done. OpenBot's tabs survive restarts, and a forgotten video tab keeps decoding and drains the battery.
 - **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
 - **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked. The `tdd` skill lists needless tests (copies the implementation, tests internals, glue with no known right answer) and when to skip test-first entirely.
 - **YAGNI.** Prefer the smallest model that makes the correct behavior unsurprising. When tempted to add abstractions, layers, or speculative machinery, follow the laziness and subtract-before-you-add skills.
