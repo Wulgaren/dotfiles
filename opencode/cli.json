@@ -23,7 +23,7 @@
       "opencode-session-usage"
   ],
   "tabs": {
-    "mode": "auto",
+    "mode": "off",
     "layout": "horizontal",
     "indicators": "status"
   },

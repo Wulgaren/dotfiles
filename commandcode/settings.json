@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "defaultMode": "accept-edits",
+    "allow": [
+      "Shell(git add *)",
+      "Shell(git commit *)",
+      "Shell(git switch *)",
+      "Shell(git checkout *)",
+      "Shell(git stash *)",
+      "Shell(git branch *)",
+      "Shell(git fetch *)",
+      "Shell(git pull *)",
+      "Shell(git merge *)",
+      "Shell(git rebase *)",
+      "Shell(git tag *)",
+      "Shell(git rm *)",
+      "Shell(npm run *)",
+      "Shell(npm test*)",
+      "Shell(npm ci)",
+      "Shell(npx *)",
+      "Shell(python3 *)",
+      "Shell(brew install *)",
+      "Shell(brew upgrade *)",
+      "Shell(brew info *)",
+      "Shell(brew list*)",
+      "Shell(ln *)",
+      "Shell(chmod *)",
+      "Shell(rsync *)",
+      "Shell(tar *)",
+      "Shell(unzip *)",
+      "Edit(.zshrc)",
+      "Edit(.gitconfig)",
+      "Edit(.gitmodules)"
+    ],
+    "ask": [
+      "Shell(rm -r*)",
+      "Shell(rm -R*)",
+      "Shell(rm --recursive*)",
+      "Shell(dd *)",
+      "Shell(truncate *)",
+      "Shell(shred *)",
+      "Shell(find * -delete*)",
+      "Shell(git clean *)",
+      "Shell(git reset --hard*)",
+      "Shell(git restore *)",
+      "Shell(git checkout -- *)",
+      "Shell(git checkout .)",
+      "Shell(git push*)",
+      "Shell(npm install -g*)",
+      "Shell(sudo *)"
+    ]
+  }
+}
