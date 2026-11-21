@@ -1,7 +1,7 @@
 alt - 1 : open -a Helium
 
-alt - 2 : open -a Ghostty
-alt - return : open -a Ghostty
+alt - 2 : open -a Rex
+alt - return : open -a Rex
 
 # alt - return : osascript ~/.config/skhd/open-terminal.scpt
 # alt - 2 : osascript ~/.config/skhd/open-terminal.scpt

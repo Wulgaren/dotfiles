@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse guard for reads. Two rules:
 #
-# 1. Whole-file reads over GRUNT_MIN_LINES (default 350) are denied and pointed
+# 1. Whole-file reads over GRUNT_MIN_LINES (default 1000) are denied and pointed
 #    at the bulk-reader skill. Same rule for the Read tool and a bare
 #    "cat/head/tail <file>" command.
 # 2. Read-shaped shell output over GRUNT_MAX_BYTES (default 6000) is capped:
@@ -20,7 +20,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MIN_LINES="${GRUNT_MIN_LINES:-350}"
+MIN_LINES="${GRUNT_MIN_LINES:-1000}"
 MAX_BYTES="${GRUNT_MAX_BYTES:-6000}"
 LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 

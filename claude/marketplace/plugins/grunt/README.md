@@ -1,6 +1,6 @@
 # grunt
 
-Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: DeepSeek V4.1 Flash inside Claude Code itself, through `claude -p`. The worker is a headless Claude session pointed at the cheap model, so it inherits your CLAUDE.md, hooks and plugins and gets the same tools as the main session.
+Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: OpenCode Go's DeepSeek V4.1 Flash, through the `ocgo` wrapper. `ocgo` starts a headless `claude -p` already pointed at OpenCode Go with its own key, so the worker does not depend on whichever provider the main session runs on. It inherits your CLAUDE.md, hooks and plugins and gets the same tools as the main session.
 
 Two paths:
 
@@ -17,7 +17,7 @@ The read guard works in Claude Code, Cursor, and OpenCode. The scripts and skill
 
 The scripts and skills are shared across agents, and `guard-read` owns the read rules for all three. Only the hook wiring differs.
 
-A `PreToolUse` hook routes reads two ways. Whole-file reads over `GRUNT_MIN_LINES` (default 350) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) pass through.
+A `PreToolUse` hook routes reads two ways. Whole-file reads over `GRUNT_MIN_LINES` (default 1000) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) pass through.
 
 Shell reads that the block rule cannot see, such as `sed -n 100,260p f` or `cat a; sed -n 1,140p b`, are capped at `GRUNT_MAX_BYTES` (default 6000). The hook rewrites the command so it still runs once, keeps the first 6000 bytes of stdout, and appends a marker with the full size plus the two ways to get the rest: an exact range or a bulk-read question. stderr and the exit code pass through unchanged. The rewrite returns `permissionDecision: allow`, so a capped command does not go through the permission prompt.
 
@@ -30,6 +30,8 @@ claude plugin install grunt@natios
 
 The marketplace lives in this dotfiles repo under `claude/marketplace` and is linked to `~/.claude/local-marketplace`.
 
+The worker needs the `ocgo` script on `PATH` (this repo links `scripts/ocgo` into `~/.local/bin`) and an OpenCode Go key in `~/.config/opencode-go/key`.
+
 Cursor and OpenCode need no install step. The plugin skills are linked into `.cursor/skills`, `link.sh sync` fans them out to the agent config directories, and OpenCode discovers `opencode/plugins/grunt` from the linked config directory.
 
 ## Config
@@ -38,12 +40,12 @@ Set in `~/.claude/settings.json` under `env`:
 
 | Var | Default | Meaning |
 |---|---|---|
-| `GRUNT_MIN_LINES` | `350` | Block reads above this line count |
+| `GRUNT_MIN_LINES` | `1000` | Block reads above this line count |
 | `GRUNT_MAX_BYTES` | `6000` | Cap on shell read stdout; the command runs once and the cut is marked |
-| `GRUNT_MODEL` | `deepseek-ai/DeepSeek-V4.1-Flash-1017` | bulk-read model |
+| `GRUNT_MODEL` | `deepseek-v4.1-flash` | bulk-read model |
 | `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call |
 | `GRUNT_EFFORT` | `low` | Reasoning effort for the `claude` workers |
-| `GRUNT_CODER_MODEL` | `deepseek-ai/DeepSeek-V4.1-Flash-1017` | code-write model |
+| `GRUNT_CODER_MODEL` | `deepseek-v4.1-flash` | code-write model |
 | `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, under Claude's 600s Bash limit |
 | `GRUNT_REVIEW_MODEL` | `openai/gpt-6.1-sol#medium` | Whole-task review model |
 | `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds per review |
@@ -51,7 +53,7 @@ Set in `~/.claude/settings.json` under `env`:
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
-`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are model names your Claude Code endpoint serves. The default is the DeepSeek model `ANTHROPIC_MODEL` points at. `GRUNT_REVIEW_MODEL` is an `opencode` model instead, prefixed by its provider.
+`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are model names OpenCode Go serves. The worker is launched through `ocgo`, which sets that endpoint, key and model, so it ignores the main session's provider. `GRUNT_REVIEW_MODEL` is an `opencode` model instead, prefixed by its provider.
 
 ## The editing worker's reach
 

@@ -7,13 +7,14 @@
 # and exits non-zero with a readable reason when the run fails. A
 # "backend:id" session resumes that worker instead of starting one.
 #
-# Backends: claude (workers) and opencode (the whole-task review).
-# Config vars and defaults are documented in the plugin README.
+# Backends: claude (workers, launched through the ocgo script) and opencode
+# (the whole-task review). Config vars and defaults are documented in the
+# plugin README.
 
-GRUNT_MODEL="${GRUNT_MODEL:-deepseek-ai/DeepSeek-V4.1-Flash-1017}"
+GRUNT_MODEL="${GRUNT_MODEL:-deepseek-v4.1-flash}"
 GRUNT_TIMEOUT="${GRUNT_TIMEOUT:-120}"
 GRUNT_EFFORT="${GRUNT_EFFORT:-low}"
-GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-deepseek-ai/DeepSeek-V4.1-Flash-1017}"
+GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-deepseek-v4.1-flash}"
 GRUNT_CODER_TIMEOUT="${GRUNT_CODER_TIMEOUT:-540}"
 GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-openai/gpt-6.1-sol#medium}"
 GRUNT_REVIEW_TIMEOUT="${GRUNT_REVIEW_TIMEOUT:-540}"
@@ -92,7 +93,9 @@ run_backend() {
   local cmd=() prompt_arg="$input"
   case "$backend" in
     claude)
-      cmd=(claude -p --output-format json --model "$model" --effort "$GRUNT_EFFORT")
+      # ocgo execs claude with OpenCode Go's endpoint and key, so the worker is
+      # independent of the provider running the main session.
+      cmd=(ocgo -p --output-format json --model "$model" --effort "$GRUNT_EFFORT")
       # A worker must not reach for the grunt skills and start a worker of its
       # own, so its skills stay off. CLAUDE.md, hooks and plugins still load.
       cmd+=(--disable-slash-commands)
