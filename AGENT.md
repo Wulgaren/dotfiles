@@ -42,6 +42,7 @@ The ledger closes when every line reads met, not met, or changed. A line that ne
 - **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
 - **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked. The `tdd` skill lists needless tests (copies the implementation, tests internals, glue with no known right answer) and when to skip test-first entirely.
 - **YAGNI.** Prefer the smallest model that makes the correct behavior unsurprising. When tempted to add abstractions, layers, or speculative machinery, follow the laziness and subtract-before-you-add skills.
+- **Tabs.** Close browser tabs when the work with them is finished. Do not leave research pages or videos open.
 - **Always-apply skills.** Load the skill with the `skill` tool, do not just recall the rule.
   - `unslop` on every message, including intermediate ones, not just the final answer. Run its checklist before you send each message. Matching the surrounding style does not count, and a dense house style does not override it.
   - `cleanup` after code edits, before handoff.
