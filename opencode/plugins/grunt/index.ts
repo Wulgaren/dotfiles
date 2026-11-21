@@ -5,6 +5,11 @@ import { spawn } from "node:child_process"
 // policy; this file only translates OpenCode's tool events into its protocol.
 const SCRIPT = `${process.env.HOME ?? ""}/.claude/local-marketplace/plugins/grunt/scripts/guard-read`
 
+// Windows cannot start an extensionless shebang script directly, so route the
+// guard through Git Bash there. GRUNT_BASH overrides a non-default install.
+const BASH =
+  process.platform === "win32" ? (process.env.GRUNT_BASH ?? "C:/Program Files/Git/bin/bash.exe") : undefined
+
 type GuardResult = {
   code: number
   stdout: string
@@ -13,7 +18,10 @@ type GuardResult = {
 
 function guard(toolName: string, toolInput: Record<string, unknown>): Promise<GuardResult> {
   return new Promise((resolve) => {
-    const child = spawn(SCRIPT, { stdio: ["pipe", "pipe", "pipe"] })
+    const child =
+      BASH === undefined
+        ? spawn(SCRIPT, { stdio: ["pipe", "pipe", "pipe"] })
+        : spawn(BASH, [SCRIPT], { stdio: ["pipe", "pipe", "pipe"] })
     let stdout = ""
     let stderr = ""
 
@@ -88,7 +96,15 @@ export default Plugin.define({
 
     await ctx.shell.hook("create.before", async (event) => {
       const result = await guard("Bash", { command: event.command })
+
+      // Exit 2 is the guard's deny for a bare whole-file read. OpenCode's shell
+      // hook has no deny channel, so throw, as the read hook does.
+      if (result.code === 2) throw new Error(result.stderr.trim())
       if (result.code !== 0) return
+
+      // The cap wrapper is bash. Windows runs the tool's shell as PowerShell,
+      // so leave the command alone there; the deny above still applies.
+      if (BASH !== undefined) return
 
       const command = rewrittenCommand(result.stdout)
       if (command !== undefined) event.command = command
