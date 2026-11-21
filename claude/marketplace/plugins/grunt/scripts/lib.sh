@@ -7,16 +7,16 @@
 # and exits non-zero with a readable reason when the run fails. A
 # "backend:id" session resumes that worker instead of starting one.
 #
-# Backends: claude (workers, launched through the ocgo script) and opencode
-# (the whole-task review). Config vars and defaults are documented in the
-# plugin README.
+# Backends: claude (workers, launched through the ocgo script) and codex (the
+# whole-task review). Config vars and defaults are documented in the plugin
+# README.
 
 GRUNT_MODEL="${GRUNT_MODEL:-deepseek-v4.1-flash}"
 GRUNT_TIMEOUT="${GRUNT_TIMEOUT:-120}"
 GRUNT_EFFORT="${GRUNT_EFFORT:-low}"
 GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-deepseek-v4.1-flash}"
 GRUNT_CODER_TIMEOUT="${GRUNT_CODER_TIMEOUT:-540}"
-GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-openai/gpt-6.1-sol#medium}"
+GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-gpt-6.1-sol}"
 GRUNT_REVIEW_TIMEOUT="${GRUNT_REVIEW_TIMEOUT:-540}"
 GRUNT_LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 
@@ -73,6 +73,7 @@ sandbox_settings() {
 }
 
 WORKER_TEXT=""
+WORKER_ERROR=""
 WORKER_SESSION=""
 WORKER_BACKEND=""
 WORKER_IN=0
@@ -85,8 +86,8 @@ grunt_fail() {
   exit 1
 }
 
-# run_backend <claude|opencode> <model> <limit> <access> <session> <prompt>
-# Writes the CLI's JSON to $raw and stderr to $err (both owned by grunt_worker),
+# run_backend <claude|codex> <model> <limit> <access> <session> <prompt>
+# Writes the CLI's output to $raw and stderr to $err (both owned by grunt_try),
 # then parses it into WORKER_*. Returns 1 with RUN_ERROR set on any failure.
 run_backend() {
   local backend="$1" model="$2" limit="$3" access="$4" session="$5" input="$6" status=0
@@ -111,10 +112,13 @@ run_backend() {
       # would be read as one of them. This prompt goes in on stdin instead.
       prompt_arg=""
       ;;
-    opencode)
-      cmd=(opencode run --archived --format json -m "$model")
-      [[ "$access" == edit ]] && cmd+=(--auto)
-      [[ -n "$session" ]] && cmd+=(--session "$session")
+    codex)
+      # codex exec reads the prompt from stdin, and -o keeps the final
+      # message alone instead of mixing it with progress lines.
+      cmd=(codex exec -m "$model" -s read-only -C "$PWD"
+        -c model_reasoning_effort=medium
+        --output-last-message "$raw.msg")
+      prompt_arg=""
       ;;
   esac
 
@@ -126,7 +130,7 @@ run_backend() {
   [[ -n "$prompt_arg" ]] && cmd+=("$prompt_arg")
 
   # The workers load Claude Code hooks too. GRUNT_OFF=1 lets them read whole files.
-  GRUNT_OFF=1 timeout "$limit" "${cmd[@]}" <<<"$input" >"$raw" 2>"$err" || status=$?
+  GRUNT_OFF=1 timeout -k 10 "$limit" "${cmd[@]}" <<<"$input" >"$raw" 2>"$err" || status=$?
 
   if (( status == 124 )); then
     RUN_ERROR="timed out after ${limit}s"
@@ -136,7 +140,7 @@ run_backend() {
     RUN_ERROR="exit $status. $(tail -3 "$err" | tr '\n' ' ')"
     return 1
   fi
-  if ! jq -e . >/dev/null 2>&1 <"$raw"; then
+  if [[ "$backend" != codex ]] && ! jq -e . >/dev/null 2>&1 <"$raw"; then
     RUN_ERROR="no JSON. $(tail -3 "$err" | tr '\n' ' ')"
     return 1
   fi
@@ -153,11 +157,15 @@ run_backend() {
       WORKER_IN="$(jq -r '.usage.input_tokens // 0' "$raw")"
       WORKER_OUT="$(jq -r '.usage.output_tokens // 0' "$raw")"
       ;;
-    opencode)
-      WORKER_TEXT="$(jq -r 'select(.type == "text") | .part.text' "$raw")"
-      id="$(jq -r '.sessionID // empty' "$raw" | head -1)"
-      WORKER_IN="$(jq -s '[.[] | select(.type == "step_finish") | .part.tokens.input // 0] | add // 0' "$raw")"
-      WORKER_OUT="$(jq -s '[.[] | select(.type == "step_finish") | .part.tokens.output // 0] | add // 0' "$raw")"
+    codex)
+      if [[ ! -s "$raw.msg" ]]; then
+        RUN_ERROR="codex wrote no last message"
+        return 1
+      fi
+      WORKER_TEXT="$(cat "$raw.msg" 2>/dev/null || true)"
+      id=""
+      WORKER_IN=0
+      WORKER_OUT=0
       ;;
   esac
 
@@ -169,11 +177,20 @@ run_backend() {
   WORKER_SESSION="$backend:$id"
 }
 
-grunt_worker() {
+# Like grunt_worker, but returns 1 with WORKER_ERROR set instead of exiting, so
+# a caller can fall back to another reviewer.
+grunt_try() {
   local backend="$1" model="$2" limit="$3" access="$4" prompt="$5" session="${6:-}"
   local raw err started id="" resumed=""
-  raw="$(mktemp)"
-  err="$(mktemp)"
+  # A caller that must clean up after a killed worker gives grunt_try a
+  # directory of its own, since its own rm never runs then.
+  if [[ -n "${GRUNT_WORKER_TMP:-}" ]]; then
+    raw="$GRUNT_WORKER_TMP/raw"
+    err="$GRUNT_WORKER_TMP/err"
+  else
+    raw="$(mktemp)"
+    err="$(mktemp)"
+  fi
   started="$(date +%s)"
 
   # Resume only a session this backend can open. A session saved by a backend
@@ -189,12 +206,18 @@ grunt_worker() {
   fi
 
   if ! run_backend "$backend" "$model" "$limit" "$access" "$id" "$prompt"; then
-    rm -f "$raw" "$err"
-    grunt_fail "$RUN_ERROR"
+    WORKER_ERROR="$RUN_ERROR"
+    rm -f "$raw" "$raw.msg" "$err"
+    return 1
   fi
 
   WORKER_SECONDS=$(($(date +%s) - started))
-  rm -f "$raw" "$err"
+  rm -f "$raw" "$raw.msg" "$err"
+}
+
+# grunt_worker keeps the exit-on-failure contract bulk-read and step rely on.
+grunt_worker() {
+  grunt_try "$@" || grunt_fail "$WORKER_ERROR"
 }
 
 # grunt_log <mode> <detail> <lines> <bytes>

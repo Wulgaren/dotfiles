@@ -5,17 +5,15 @@ Routes the expensive, low-thinking parts of Claude Code work to a cheap worker m
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff, GPT-6.1 Sol reviews the finished commit series, `finish` applies the whole task to the working tree as uncommitted edits. The review is the one call that goes through `opencode run`, so a second model family checks the series.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff. When the series is done, GPT-6.1 Sol (through the `codex` CLI) and the `ocgo` worker review the whole task at once; Sol is optional, so a run that fails or times out is skipped, while a returned `changes-needed` verdict still fails the review. `finish` applies the task to the working tree as uncommitted edits.
 
-The read guard works in Claude Code, Cursor, and OpenCode. The scripts and skills are shared. Only the hook wiring differs.
+The read guard works in Claude Code, Cursor, and OpenCode. `guard-read` owns the read rules; only the hook wiring differs.
 
 | Agent | Skills | Guard |
 |---|---|---|
 | Claude Code | plugin `skills/` | plugin `hooks/hooks.json` |
 | Cursor | `~/.cursor/skills` (dotfiles fan-out) | `.cursor/hooks/grunt-guard-read` via `preToolUse` |
 | OpenCode | `~/.claude/skills` and `~/.agents/skills` | `opencode/plugins/grunt/index.ts` |
-
-The scripts and skills are shared across agents, and `guard-read` owns the read rules for all three. Only the hook wiring differs.
 
 A `PreToolUse` hook routes reads two ways. Whole-file reads over `GRUNT_MIN_LINES` (default 1000) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) pass through.
 
@@ -30,7 +28,7 @@ claude plugin install grunt@natios
 
 The marketplace lives in this dotfiles repo under `claude/marketplace` and is linked to `~/.claude/local-marketplace`.
 
-The worker needs the `ocgo` script on `PATH` (this repo links `scripts/ocgo` into `~/.local/bin`) and an OpenCode Go key in `~/.config/opencode-go/key`.
+The worker needs the `ocgo` script on `PATH` (this repo links `scripts/ocgo` into `~/.local/bin`) and an OpenCode Go key in `~/.config/opencode-go/key`. The Sol review needs the `codex` CLI on `PATH`, signed in to an account that can reach `GRUNT_REVIEW_MODEL`.
 
 Cursor and OpenCode need no install step. The plugin skills are linked into `.cursor/skills`, `link.sh sync` fans them out to the agent config directories, and OpenCode discovers `opencode/plugins/grunt` from the linked config directory.
 
@@ -47,13 +45,13 @@ Set in `~/.claude/settings.json` under `env`:
 | `GRUNT_EFFORT` | `low` | Reasoning effort for the `claude` workers |
 | `GRUNT_CODER_MODEL` | `deepseek-v4.1-flash` | code-write model |
 | `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, under Claude's 600s Bash limit |
-| `GRUNT_REVIEW_MODEL` | `openai/gpt-6.1-sol#medium` | Whole-task review model |
-| `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds per review |
+| `GRUNT_REVIEW_MODEL` | `gpt-6.1-sol` | Sol's codex model |
+| `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds for each reviewer, run in parallel |
 | `GRUNT_SANDBOX` | `1` | Fence an editing worker's shell writes |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
-`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are model names OpenCode Go serves. The worker is launched through `ocgo`, which sets that endpoint, key and model, so it ignores the main session's provider. `GRUNT_REVIEW_MODEL` is an `opencode` model instead, prefixed by its provider.
+`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are model names OpenCode Go serves. The worker is launched through `ocgo`, which sets that endpoint, key and model, so it ignores the main session's provider. `GRUNT_REVIEW_MODEL` is a codex CLI model name. The ocgo reviewer runs on `GRUNT_CODER_MODEL`.
 
 ## The editing worker's reach
 

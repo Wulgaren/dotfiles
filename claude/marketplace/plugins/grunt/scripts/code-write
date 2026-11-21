@@ -202,11 +202,14 @@ review() {
     esac
   done
   require_worktree
+  # Edits the orchestrator made in the worktree since the last step, so the
+  # reviewers see them in the diff.
+  has_changes && commit_all "orchestrator edits"
 
-  # A read-only reviewer sees the whole series at once, so it can judge the
-  # task rather than each step in isolation. No access flag, so it reads files
-  # but cannot edit or commit.
-  local base log diff prompt verdict
+  # The reviewers see the whole series at once, so they can judge the task
+  # rather than each step in isolation. Neither has an access flag, so they
+  # read files but cannot edit or commit.
+  local base log diff prompt
   base="$(cat "$(state_file base)")"
   log="$(git -C "$worktree" log --format='%h %s' "$base"..HEAD)"
   diff="$(git -C "$worktree" diff "$base" HEAD -- .)"
@@ -230,24 +233,67 @@ $diff
 End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
 
   cd "$worktree"
-  grunt_worker opencode "$GRUNT_REVIEW_MODEL" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"
-  printf '## review (%s)\n%s\n\n' "$WORKER_BACKEND" "$WORKER_TEXT"
+  # Two reviewers read the series at once: Sol through the codex CLI and the
+  # ocgo worker. Sol is optional, so a failed or timed-out run only costs its
+  # findings; a changes-needed verdict from either reviewer fails the review.
+  # The ocgo worker is required.
+  local sol_status=0 sol_text="" sol_verdict ocgo_text ocgo_verdict
+  # The EXIT trap runs after this function's locals are gone, so the PID and
+  # temp paths it cleans up stay global. The directory is what survives a
+  # killed worker: grunt_try's own cleanup never runs in that case.
+  sol_tmp="$(mktemp -d)"
+  sol_out="$sol_tmp/out"
+  sol_err="$sol_tmp/err"
+  set -m
+  (
+    if GRUNT_WORKER_TMP="$sol_tmp" grunt_try codex "$GRUNT_REVIEW_MODEL" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"; then
+      printf '%s' "$WORKER_TEXT" > "$sol_out"
+    else
+      printf '%s' "$WORKER_ERROR" > "$sol_err"
+      exit 1
+    fi
+  ) &
+  sol_pid=$!
+  set +m
+  # timeout puts its child in its own process group, so signal that child
+  # first; timeout forwards the signal. Then kill the job's group.
+  trap 'pkill -TERM -P "$sol_pid" 2>/dev/null || true; kill -- -"$sol_pid" 2>/dev/null || true; rm -rf "$sol_tmp"' EXIT
+
+  grunt_worker claude "$GRUNT_CODER_MODEL" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"
+  ocgo_text="$WORKER_TEXT"
+
+  wait "$sol_pid" || sol_status=$?
+  trap - EXIT
+
+  printf '## review: ocgo\n%s\n\n' "$ocgo_text"
+  if (( sol_status == 0 )) && [[ -s "$sol_out" ]]; then
+    sol_text="$(cat "$sol_out")"
+    printf '## review: %s (codex)\n%s\n\n' "$GRUNT_REVIEW_MODEL" "$sol_text"
+  else
+    printf '## review: %s (codex): skipped (%s)\n\n' "$GRUNT_REVIEW_MODEL" "$(cat "$sol_err")"
+  fi
+  rm -rf "$sol_tmp"
+
   grunt_log "review" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
 
-  verdict="$(printf '%s\n' "$WORKER_TEXT" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
-  case "$verdict" in
-    "VERDICT: clean")
-      printf 'review: clean\n'
-      ;;
-    "VERDICT: changes-needed")
-      printf '\nreview: changes needed. Fix the findings yourself in the worktree, or send them back with:\n  code-write step %s --continue --spec "<review notes>" --check "<cmd>"\nThen review again.\n' "$task" >&2
-      exit 1
-      ;;
+  ocgo_verdict="$(printf '%s\n' "$ocgo_text" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
+  sol_verdict="$(printf '%s\n' "$sol_text" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
+  if [[ -n "$sol_text" && -z "$sol_verdict" ]]; then
+    printf 'review: sol (codex) gave no verdict line; read its findings above.\n' >&2
+  fi
+
+  case "$ocgo_verdict" in
+    "VERDICT: clean"|"VERDICT: changes-needed") ;;
     *)
-      printf '\nreview: the reviewer gave no verdict line. Treat the task as unreviewed and rerun.\n' >&2
+      printf '\nreview: the ocgo reviewer gave no verdict line. Treat the task as unreviewed and rerun.\n' >&2
       exit 1
       ;;
   esac
+  if [[ "$ocgo_verdict" == "VERDICT: changes-needed" || "$sol_verdict" == "VERDICT: changes-needed" ]]; then
+    printf '\nreview: changes needed. Fix the findings yourself in the worktree, or send them back with:\n  code-write step %s --continue --spec "<review notes>" --check "<cmd>"\nThen review again.\n' "$task" >&2
+    exit 1
+  fi
+  printf 'review: clean\n'
 }
 
 finish() {
