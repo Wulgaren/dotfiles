@@ -1,11 +1,11 @@
 # grunt
 
-Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: OpenCode Go's DeepSeek V4.1 Flash, through the `ocgo` wrapper. `ocgo` starts a headless `claude -p` already pointed at OpenCode Go with its own key, so the worker does not depend on whichever provider the main session runs on. It inherits your CLAUDE.md, hooks and plugins and gets the same tools as the main session.
+Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: Cursor's `auto` mode, through the `cursor-agent` CLI. The worker is a separate headless Cursor agent, so it does not depend on whichever provider the main session runs on. It reads the project's `CLAUDE.md` and `AGENTS.md`, and picks up the project's `.cursor/hooks.json` when the working directory has one.
 
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Claude reviews each step's diff. When the series is done, GPT-6.1 Sol (through the `codex` CLI) and the `ocgo` worker review the whole task at once; Sol is optional, so a run that fails or times out is skipped, while a returned `changes-needed` verdict still fails the review. `finish` applies the task to the working tree as uncommitted edits.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Each step is gated on its check. When the series is done, Claude reads the whole task diff. Dual-agent review (GPT-6.1 Sol through `codex`, plus `cursor-agent`) runs only when the skill says the task is review-worthy: behaviour/API/data risk, multi-file structure, weak checks, or a planner-requested second opinion. Presentation/CSS/copy/config that already passed its check skips Cursor+Sol after the planner's own diff read. Sol is optional on a run; a returned `changes-needed` still fails that review. Planner self-fixes then finish without a second dual review; a worker continue gets at most one more. `abort` kills an in-flight review. `finish` applies the task to the working tree as uncommitted edits.
 
 The read guard works in Claude Code, Cursor, and OpenCode. `guard-read` owns the read rules; only the hook wiring differs.
 
@@ -28,7 +28,7 @@ claude plugin install grunt@natios
 
 The marketplace lives in this dotfiles repo under `claude/marketplace` and is linked to `~/.claude/local-marketplace`.
 
-The worker needs the `ocgo` script on `PATH` (this repo links `scripts/ocgo` into `~/.local/bin`) and an OpenCode Go key in `~/.config/opencode-go/key`. The Sol review needs the `codex` CLI on `PATH`, signed in to an account that can reach `GRUNT_REVIEW_MODEL`.
+The worker needs the `cursor-agent` CLI on `PATH`, signed in with `cursor-agent login`. The Sol review needs the `codex` CLI on `PATH`, signed in to an account that can reach `GRUNT_REVIEW_MODEL`.
 
 Cursor and OpenCode need no install step. The plugin skills are linked into `.cursor/skills`, `link.sh sync` fans them out to the agent config directories, and OpenCode discovers `opencode/plugins/grunt` from the linked config directory.
 
@@ -40,37 +40,27 @@ Set in `~/.claude/settings.json` under `env`:
 |---|---|---|
 | `GRUNT_MIN_LINES` | `1000` | Block reads above this line count |
 | `GRUNT_MAX_BYTES` | `6000` | Cap on shell read stdout; the command runs once and the cut is marked |
-| `GRUNT_MODEL` | `deepseek-v4.1-flash` | bulk-read model |
-| `GRUNT_TIMEOUT` | `120` | Seconds per bulk-read call |
-| `GRUNT_EFFORT` | `low` | Reasoning effort for the `claude` workers |
-| `GRUNT_CODER_MODEL` | `deepseek-v4.1-flash` | code-write model |
-| `GRUNT_CODER_TIMEOUT` | `540` | Seconds per code-write step, under Claude's 600s Bash limit |
+| `GRUNT_MODEL` | `auto` | bulk-read model |
+| `GRUNT_CODER_MODEL` | `auto` | code-write model |
 | `GRUNT_REVIEW_MODEL` | `gpt-6.1-sol` | Sol's codex model |
-| `GRUNT_REVIEW_TIMEOUT` | `540` | Seconds for each reviewer, run in parallel |
-| `GRUNT_SANDBOX` | `1` | Fence an editing worker's shell writes |
+| `GRUNT_SANDBOX` | `1` | Fence an editing worker's writes |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
-`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are model names OpenCode Go serves. The worker is launched through `ocgo`, which sets that endpoint, key and model, so it ignores the main session's provider. `GRUNT_REVIEW_MODEL` is a codex CLI model name. The ocgo reviewer runs on `GRUNT_CODER_MODEL`.
+`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are `cursor-agent` model names; `cursor-agent models` lists them, and `auto` lets Cursor pick. `GRUNT_REVIEW_MODEL` is a codex CLI model name. The cursor reviewer runs on `GRUNT_CODER_MODEL`.
 
 ## The editing worker's reach
 
-An editing worker runs `acceptEdits` with `Bash` allowed, so a permission prompt never stops it and a shell redirect reaches any path on the machine. `git push` is still refused, but `rm` and friends were not, and a probe run of this plugin wrote straight into the main repository over a redirect. Two things fence that in.
+An editing worker runs with `--trust`, so a permission prompt never stops it, and it can run any shell command the deny list does not name. Two things fence that in.
 
-- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run: `rm`, `mv`, `git push`, `git reset`, `sudo`, and the rest of the ask rules from `opencode.json`. A denied call comes back to the worker as a refusal, not a prompt.
-- `--settings` turns on Claude Code's OS sandbox with `allowUnsandboxedCommands: false`, so a worker cannot run a command outside it. Sandboxed shell writes fail with `operation not permitted` anywhere outside the worktree, except a path some settings file already grants.
+- `--sandbox enabled` is the write fence. A worker that writes outside its working directory gets `operation not permitted`, and its retry with elevated permissions is refused. `code-write`'s worktree is therefore the only place an editing worker can write, and the main repository stays out of reach without naming any path. macOS `/tmp` is the exception: the sandbox treats it as scratch space.
+- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run. The worker carries that list in its own `.cursor/cli.json`, so `code-write` needs no install in your tree. A denied call comes back to the worker as a refusal, not a prompt.
 
-That exception is why the fence does not rest on the sandbox's default boundary. `sandbox.filesystem` has grants (`allowWrite`) and restrictions (`denyWrite`) but no allow-only list, and `allowWrite` merges grants from user settings, project settings and `Edit` allow rules. A single inherited grant reopens its path. `GRUNT_DENY_WRITE` therefore names paths outright, since `denyWrite` outranks every grant. It holds your SSH, AWS and GPG keys, `~/.claude`, `~/Library`, `~/Documents`, the system prefixes, and the main repository itself — a worker that writes there skips review entirely.
+Cursor matches a deny entry as a command prefix and blocks it wherever the command appears, so the list does not have to spell out `cd x && rm y`, `bash -c 'rm y'` or `/bin/rm y`; a probe confirmed all three are refused.
 
-The main repository is the boundary worth testing. With a settings file that granted it explicitly, a probe worker's write was still refused:
+A reading worker runs in `ask` mode, which offers it reading and analysis only. A bulk-read worker and the cursor reviewer therefore carry no deny list.
 
-```
-sandbox.filesystem.allowWrite = ["/private/tmp/grunt-task"]
-sandbox.filesystem.denyWrite  includes "/private/tmp/grunt-task"
-→ operation not permitted
-```
-
-The write fence is not a read fence: a worker can read anything you can, as `claude` itself can.
+The write fence is not a read fence: a worker reads whatever you can read.
 
 
 ## Log

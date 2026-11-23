@@ -35,9 +35,7 @@ The ledger closes when every line reads met, not met, or changed. A line that ne
 - **Readable > clever.** Flat functions, explicit names, one obvious path.
 - **Questions are read-only.** When the user asks what, why, or how something works, investigate and answer. Edit only when they ask for a change.
 - **Round trips.** Every tool call that waits on the one before it re-sends the whole conversation, so a call in a 300k-token session costs 300k tokens. Put the reads and checks you would run back to back into one Bash call: several `sed -n` ranges and `rg` patterns together, or build and test together. Cut output where it starts with `rg -m`, `tail`, or `head -c`.
-- **Fresh sessions.** Long sessions spend most of the user's limit, and only the user can run `/clear` and `/compact`. When you hand back a finished task, end the reply with the exact command to paste:
-  - The session also holds earlier work unrelated to this task: `/clear`.
-  - The work continues but its earlier parts are done: `/compact <what to keep>`, filled in with the decisions, files, and open items the next step needs.
+- **Fresh sessions.** Long sessions spend most of the user's limit. When a phase is done and work continues in a new window, call the `handoff` skill with what the next session will focus on. Continuity lives in the handoff note; a fresh session loads it.
 - **Close browser tabs.** Close every tab you open, and any other tab left playing media, once the task using it is done. OpenBot's tabs survive restarts, and a forgotten video tab keeps decoding and drains the battery.
 - **Comments.** Describe how a function, class, or type is used, above its definition. Skip line-by-line narration. When behavior changes, update or remove the comment in the same edit.
 - **Focused tests.** Prefer tests that prove the change. Skip broad smoke suites and regression nets around unrelated features or deletions unless asked. The `tdd` skill lists needless tests (copies the implementation, tests internals, glue with no known right answer) and when to skip test-first entirely.
@@ -47,7 +45,7 @@ The ledger closes when every line reads met, not met, or changed. A line that ne
   - `unslop` on every message, including intermediate ones, not just the final answer. Run its checklist before you send each message. Matching the surrounding style does not count, and a dense house style does not override it.
   - `cleanup` after code edits, before handoff.
   - `tdd` before behaviour changes.
-  - `code-writer` for every step that writes new code, including the fix that ends a debugging session. Diagnosis, probe edits and throwaway repro scripts stay with you; the fix goes to the worker, even when it is a few lines.
+  - `code-writer` for every step that writes new code, including the fix that ends a debugging session. Diagnosis, probe edits and throwaway repro scripts stay with you; the fix goes to the worker, even when it is a few lines. Dual Cursor+Sol review is gated by that skill (skip for presentation/CSS/copy/config when checks passed and you already read the full task diff); `finish` does not require `review: clean`.
   - The `principle-*` skills when debugging, under context pressure, refactoring, or sequencing an addition.
 - If you wrote prose without a `unslop` call this turn, stop, load the skill, and rewrite it before sending.
 
@@ -135,3 +133,28 @@ Workflow and tooling notes that transfer across projects. Project-specific bug f
 ---
 
 *Add an entry here only when the struggle and fix would help in an unrelated repo. Otherwise use the project's own AGENT.md, or skip.*
+
+---
+
+## 5. Grunt worktree + npm workspaces resolve shared from main
+
+**Struggle:** A fix in `~/.cache/grunt/<repo>-<task>/packages/shared` looks green in worktree unit tests, but `vite build` still fails importing `node:crypto` (or other Node-only APIs) from the main tree’s `packages/shared`.
+
+**Resolution:** Root `node_modules` often symlinks workspace packages to the *main* checkout, not the grunt worktree. Patch the shared package on main (or break the hoist), then rebuild. Finishing a task that only fixed the worktree copy will conflict if main already has the same change.
+
+---
+
+## 6. `nohup` + `exec` children survive Ctrl-C
+
+**Struggle:** A launcher starts a long-lived backend with `nohup … &` then `exec`s the foreground app. Ctrl-C stops the app; the backend keeps running. Putting the app in the background and `kill -INT`ing it from a trap also hangs: bash marks background jobs SIGINT-ignored.
+
+**Resolution:** Track the backend PID only when this run started it. Do not `exec`. `trap` EXIT to kill+wait that PID. Run the foreground app under `wait`, and on INT/TERM/HUP forward a real stop signal (map INT → TERM for background children), then exit so EXIT cleanup runs.
+
+---
+
+## 7. Grunt dual review tax on small CSS/layout
+
+**Struggle:** A few dozen lines of CSS or layout through `code-write` still burns 10+ minutes because every finish path ran Cursor+Sol on the full series, `changes-needed` said "review again", and abort left an in-flight review running against a deleted worktree.
+
+**Resolution:** Follow the code-writer review gate: skip dual review for presentation/CSS/copy/config when checks passed and the planner already read the diff. Planner self-fixes go straight to `finish`. Re-run dual review only after a worker `--continue`, at most once more per task. `code-write abort` kills the recorded review PID first.
+

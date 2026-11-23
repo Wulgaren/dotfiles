@@ -1,17 +1,17 @@
 ---
 name: code-writer
-description: Hand a planned implementation step to the grunt worker, which edits files in a git worktree while you write the spec and review the diff. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines.
+description: Hand a planned implementation step to the grunt worker, which edits files in a git worktree while you write the specs and gate dual-agent review when the task is done. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines. Skip Cursor+Sol review for presentation/CSS/copy/config when checks passed and you already read the full task diff.
 ---
 
 # code-writer
 
-You are the planner and reviewer. The worker writes the code. Each _step_ is a written _spec_ in, a committed diff out. You review every diff before the next step, and the finished task lands in the user's working tree as uncommitted edits.
+You are the planner and reviewer. The worker writes the code. Each _step_ is a written _spec_ in, a committed diff out. Gate each step on its check. Dual-agent review is gated (below), not automatic. The task lands in the user's working tree as uncommitted edits.
 
-Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it from the main repository. Give every `step` call a Bash timeout of 600000.
+Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it from the main repository.
 
 ## Loop
 
-1. **Plan.** Split the task into steps, each one diff you can review in one pass. Done when every step has a spec and a check command.
+1. **Plan.** Split the task into steps. Each step needs a spec the worker can follow alone and a check that proves it. Done when every step has a spec and a check command.
 
 2. **Start.** `code-write start <task>` creates a worktree on branch `grunt/<task>` and prints its path. If the user's tree has uncommitted changes, the script stops. Ask the user whether the worker should build on those changes, then rerun with `--with-uncommitted` or `--from-head`. Done when the path is printed.
 
@@ -23,26 +23,34 @@ Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it f
 
    The check is the fastest command that proves the step, such as a focused test file or a typecheck. The worker loops on it, then the script runs it once more and prints the result, the worker's bullets, and the step diff.
 
-4. **Review.** Read every line of the diff against the spec and the repo's rules. Treat the worker's bullets as claims and the diff as truth.
-   - Small problems: fix them yourself with Edit on the worktree path. The next `step` or `finish` commits your fix.
-   - Big problems: `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`. This resumes the worker's session, so the notes only need to say what to change.
-   - If the second try is still wrong, fix it yourself or `code-write abort <task>`.
-   Done when the diff is one you would have written. Then take the next step.
+   - Check passed: take the next step.
+   - Check failed: `code-write step <task> --continue --spec "<notes>" --check "<cmd>"`, or fix it yourself with Edit on the worktree path. The next `step` or `finish` commits your fix. If the second try still fails, fix it yourself or `code-write abort <task>`.
 
-5. **Review the series.** When every step is accepted, run `code-write review <task> --intent "<one sentence: what the user asked for>"`. GPT-6.1 Sol (through the `codex` CLI) and the `ocgo` worker read the commit list and the whole task diff at once and return findings. Sol is optional: a run that fails or times out is skipped, while a returned `changes-needed` verdict still fails the review. Per-step review misses what the steps add up to; this pass catches it before the code reaches the user's tree.
+   Done when every step's check has passed.
 
-   - Findings are claims, like the worker's bullets. Verify each against the code.
-   - Small findings: fix them yourself in the worktree.
-   - Larger ones: send them back to the worker with `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`. The fix goes to the worker, never to the reviewer.
+4. **Review.** When every step's check has passed, read the whole task diff against the plan and the repo's rules. Treat the worker's bullets as claims and the diff as truth.
 
-   Done when the review prints `review: clean`. An ocgo failure or a missing ocgo verdict is not clean, so rerun it.
+   **Run** `code-write review <task> --intent "<one sentence>"` (Cursor + Sol on the full series) only when any of these is true:
+   - new or changed behaviour in logic, API, data, auth, money, or migrations
+   - multi-file structural change (new module, shared helper, cross-layer wiring)
+   - the check is weak relative to the risk (typecheck-only on a behaviour change, or no focused test where one belongs)
+   - your own diff read finds a real risk and you want a second opinion
 
-6. **Finish.** `code-write finish <task>` applies the whole task to the user's working tree, prints a diff stat, and deletes the worktree and branch. Continue the normal workflow (exercise the flow, build, cleanup) in the main tree. If the patch does not apply, the user's tree changed during the task. The worktree stays, so resolve it by hand.
+   **Skip** dual-agent review when all of these are true: checks passed; the diff is presentation, CSS, copy, config, or wiring (or a small self-fix after a prior pass); you personally read the full task diff and found nothing that needs another agent. Print `review: skipped (planner; <reason>)` and go to finish. `finish` does not require a prior `review: clean`.
+
+   When you do run dual-agent review:
+   - Findings are claims. Verify each against the code.
+   - Small findings: fix them yourself in the worktree, re-read the delta, then **finish**. Do not re-run dual review for planner self-fixes.
+   - Larger findings: `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`, then dual-review the series **once** more. Cap at one dual-review round-trip per task unless a new high-severity risk appears after that continue.
+   - A cursor-agent failure or a missing cursor verdict is not clean; rerun that review once.
+
+   On user stop or `code-write abort`, abort before starting another review. Abort kills an in-flight review for that task.
+
+5. **Finish.** `code-write finish <task>` applies the whole task to the user's working tree, prints a diff stat, and deletes the worktree and branch. Continue the normal workflow (exercise the flow, build, cleanup) in the main tree. If the patch does not apply, the user's tree changed during the task. The worktree stays, so resolve it by hand.
 
 ## Limits
 
 - Worktrees live under `~/.cache/grunt/<repo>-<task>` (`$XDG_CACHE_HOME` is honored), inside the home directory rather than the system temp dir, so container builds that mount `$HOME` can see them.
 - The worktree holds tracked files, any carried edits, and symlinks to a root-level `node_modules` or `.venv`. Other ignored files such as `.env` stay behind. When a check needs them, put the setup in the spec.
-- The worker is a headless Claude session launched by `ocgo` on `GRUNT_CODER_MODEL` (OpenCode Go), so it sees your CLAUDE.md and hooks and has the same tools you do, minus skills. Its shell writes are fenced to the worktree, and `rm`, `git push`, `sudo` and the other commands in `GRUNT_DENY` come back to it as a refusal; it works around them and says so in its bullets.
-- The worker gets the whole 540s step. A run that times out leaves its partial edits uncommitted in the worktree and exits non-zero with the reason. Inspect them with `git -C <worktree> diff`; the next `step` commits them along with any fixes of yours.
+- The worker is a headless Cursor agent launched by `cursor-agent` on `GRUNT_CODER_MODEL`, so it reads the project's CLAUDE.md and AGENTS.md but not your Claude Code hooks or plugins. Its writes are fenced to the worktree by Cursor's `--sandbox`, and `rm`, `git push`, `sudo` and the other commands in `GRUNT_DENY` come back to it as a refusal; it works around them and says so in its bullets.
 - `--continue` resumes the worker's session and resends the original spec under your notes, so a resumed worker sees the whole task. A session saved by a backend the plugin no longer uses is dropped with a note on stderr, and the step starts a fresh worker with that same resent spec.

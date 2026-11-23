@@ -1,6 +1,9 @@
 ---
 name: handoff
-description: Compact the current conversation into a project memory note so a fresh agent picks up where this one stopped. Use when the session is long, before compacting, or when the user asks for a handoff.
+description: >
+  Write a project memory note so a fresh agent continues the work. Use when
+  the session is long, before a fresh session, or when the user asks for a
+  handoff.
 argument-hint: "What will the next session be used for?"
 ---
 
@@ -32,3 +35,5 @@ Reference artifacts by path or URL (specs, plans, ADRs, issues, commits, diffs) 
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the note accordingly.
+
+Done when the note and `MEMORY.md` line are written (or the existing note updated), and the reply ends with the exact command to paste: `/clear`. The user runs `/clear`. The note is the continuity; a fresh session loads it.

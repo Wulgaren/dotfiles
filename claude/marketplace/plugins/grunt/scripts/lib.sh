@@ -1,75 +1,45 @@
 #!/usr/bin/env bash
 # Shared worker plumbing for the grunt plugin.
 #
-# grunt_worker <backend> <model> <limit> <read|edit> "<prompt>" [session]
-# runs one worker CLI in the current directory for up to <limit> seconds. Sets
-# WORKER_TEXT, WORKER_SESSION ("backend:id"), WORKER_BACKEND and token counts,
-# and exits non-zero with a readable reason when the run fails. A
-# "backend:id" session resumes that worker instead of starting one.
+# grunt_worker <backend> <model> <read|edit> "<prompt>" [session]
+# runs one worker CLI in the current directory. Sets WORKER_TEXT,
+# WORKER_SESSION ("backend:id"), WORKER_BACKEND and token counts, and exits
+# non-zero with a readable reason when the run fails. A "backend:id" session
+# resumes that worker instead of starting one.
 #
-# Backends: claude (workers, launched through the ocgo script) and codex (the
+# Backends: cursor (workers, through the cursor-agent CLI) and codex (the
 # whole-task review). Config vars and defaults are documented in the plugin
 # README.
 
-GRUNT_MODEL="${GRUNT_MODEL:-deepseek-v4.1-flash}"
-GRUNT_TIMEOUT="${GRUNT_TIMEOUT:-120}"
-GRUNT_EFFORT="${GRUNT_EFFORT:-low}"
-GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-deepseek-v4.1-flash}"
-GRUNT_CODER_TIMEOUT="${GRUNT_CODER_TIMEOUT:-540}"
+GRUNT_MODEL="${GRUNT_MODEL:-auto}"
+GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-auto}"
 GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-gpt-6.1-sol}"
-GRUNT_REVIEW_TIMEOUT="${GRUNT_REVIEW_TIMEOUT:-540}"
 GRUNT_LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 
-# Commands an editing worker may not run, mirroring the ask rules in
-# opencode.json. acceptEdits approves every other Bash call without a prompt,
-# so this list and the sandbox below are what stand between a worker and the
-# user's data.
+# Commands an editing worker may not run. The worker runs under --trust, which
+# approves every command without a prompt, so this list and the sandbox below
+# are what stand between a worker and the user's data.
+#
+# Cursor matches an entry as a command prefix wherever the command appears, so
+# hiding it behind `cd x && ...`, `bash -c '...'` or a full path does not get
+# past the entry.
 GRUNT_DENY=(
-  'Bash(rm:*)' 'Bash(rmdir:*)' 'Bash(mv:*)' 'Bash(dd:*)' 'Bash(truncate:*)'
-  'Bash(shred:*)' 'Bash(find * -delete*)' 'Bash(git clean:*)' 'Bash(git reset:*)'
-  'Bash(git checkout --:*)' 'Bash(git checkout .)' 'Bash(git restore:*)'
-  'Bash(git push:*)' 'Bash(sudo:*)' 'Bash(npm install -g*)'
+  'Shell(rm)' 'Shell(rmdir)' 'Shell(mv)' 'Shell(dd)' 'Shell(truncate)'
+  'Shell(shred)' 'Shell(sudo)' 'Shell(git push)' 'Shell(git reset)'
+  'Shell(git clean)' 'Shell(git restore)' 'Shell(npm install -g)'
 )
 
-# Claude Code's OS sandbox, which fences shell writes to the task's worktree.
-# The deny list above cannot do this: a worker reaches any path with a shell
-# redirect, and acceptEdits approves it. Set GRUNT_SANDBOX=0 to switch it off.
+# cursor-agent's sandbox, which fences a worker's writes to its working
+# directory even when the worker retries with elevated permissions. Set
+# GRUNT_SANDBOX=0 to switch it off.
 GRUNT_SANDBOX="${GRUNT_SANDBOX:-1}"
 
-# The main repository an editing worker must not write to. code-write sets it
-# to the tree the task will be applied to; empty for every other caller.
-GRUNT_MAIN_ROOT="${GRUNT_MAIN_ROOT:-}"
-
-# Paths a sandboxed worker may never write, whatever a settings file grants.
-# allowWrite merges grants from user and project settings and from Edit allow
-# rules, so a grant inherited from any of those reopens a path. denyWrite
-# outranks every grant, which is what holds the fence.
+# The permission config handed to cursor-agent, written into the worker's own
+# .cursor/cli.json so the deny list travels with the worker.
 #
-# The main repository is on this list because it is the boundary that matters:
-# the worker builds in a worktree and `finish` applies its work. A worker that
-# writes to the main tree skips review entirely.
-GRUNT_DENY_WRITE=(
-  "$HOME/.ssh" "$HOME/.aws" "$HOME/.gnupg" "$HOME/.config/gh"
-  "$HOME/.claude" "$HOME/Library" "$HOME/Documents" "$HOME/Desktop"
-  /etc /usr /bin /sbin /opt /var /private/etc
-)
-
-# Settings JSON that confines the worker's shell writes to its working
-# directory and refuses to run a command outside the sandbox. Claude Code maps
-# a worker's own temp dir into that sandbox, so a test runner still has one.
-#
-# sandbox_settings <main-repo-root>
-sandbox_settings() {
-  local main="${1:-}"
-  local deny
-  deny="$(printf '%s\n' "${GRUNT_DENY_WRITE[@]}" $main | jq -R . | jq -sc .)"
-  jq -nc --argjson deny "$deny" '{
-    sandbox: {
-      enabled: true,
-      allowUnsandboxedCommands: false,
-      filesystem: {denyWrite: $deny}
-    }
-  }'
+# cursor_deny_json
+cursor_deny_json() {
+  printf '%s\n' "${GRUNT_DENY[@]}" | jq -R . | jq -sc '{permissions: {allow: [], deny: .}}'
 }
 
 WORKER_TEXT=""
@@ -86,31 +56,32 @@ grunt_fail() {
   exit 1
 }
 
-# run_backend <claude|codex> <model> <limit> <access> <session> <prompt>
+# run_backend <cursor|codex> <model> <access> <session> <prompt>
 # Writes the CLI's output to $raw and stderr to $err (both owned by grunt_try),
 # then parses it into WORKER_*. Returns 1 with RUN_ERROR set on any failure.
 run_backend() {
-  local backend="$1" model="$2" limit="$3" access="$4" session="$5" input="$6" status=0
+  local backend="$1" model="$2" access="$3" session="$4" input="$5" status=0
   local cmd=() prompt_arg="$input"
   case "$backend" in
-    claude)
-      # ocgo execs claude with OpenCode Go's endpoint and key, so the worker is
-      # independent of the provider running the main session.
-      cmd=(ocgo -p --output-format json --model "$model" --effort "$GRUNT_EFFORT")
-      # A worker must not reach for the grunt skills and start a worker of its
-      # own, so its skills stay off. CLAUDE.md, hooks and plugins still load.
-      cmd+=(--disable-slash-commands)
+    cursor)
+      # --print makes one headless run and returns JSON, with the prompt as a
+      # positional argument.
+      #
+      # --trust answers the workspace-trust prompt that would otherwise stop a
+      # headless run, and --sandbox enabled is the write fence.
+      cmd=(cursor-agent -p --trust --output-format json --model "$model")
+      [[ "$GRUNT_SANDBOX" == 1 ]] && cmd+=(--sandbox enabled)
       if [[ "$access" == edit ]]; then
-        cmd+=(--tools=Read,Grep,Glob,Edit,Write,Bash --allowedTools=Bash)
-        cmd+=(--permission-mode acceptEdits --disallowedTools "${GRUNT_DENY[@]}")
-        [[ "$GRUNT_SANDBOX" == 1 ]] && cmd+=(--settings "$(sandbox_settings "${GRUNT_MAIN_ROOT:-}")")
+        # An editing worker carries the deny list in its own .cursor/cli.json,
+        # which takes an allow list and a deny list together.
+        mkdir -p "$PWD/.cursor"
+        cursor_deny_json >"$PWD/.cursor/cli.json"
       else
-        cmd+=(--tools=Read,Grep,Glob --permission-mode dontAsk)
+        # A reading worker runs in ask mode, which offers it reading and
+        # analysis only, so it needs no deny list.
+        cmd+=(--mode ask)
       fi
       [[ -n "$session" ]] && cmd+=(--resume "$session")
-      # --disallowedTools takes many values, so a trailing positional prompt
-      # would be read as one of them. This prompt goes in on stdin instead.
-      prompt_arg=""
       ;;
     codex)
       # codex exec reads the prompt from stdin, and -o keeps the final
@@ -129,13 +100,10 @@ run_backend() {
 
   [[ -n "$prompt_arg" ]] && cmd+=("$prompt_arg")
 
-  # The workers load Claude Code hooks too. GRUNT_OFF=1 lets them read whole files.
-  GRUNT_OFF=1 timeout -k 10 "$limit" "${cmd[@]}" <<<"$input" >"$raw" 2>"$err" || status=$?
+  # The workers load the project's own instruction files, so the guard stays off
+  # for them: GRUNT_OFF=1 lets a worker read whole files.
+  GRUNT_OFF=1 "${cmd[@]}" <<<"$input" >"$raw" 2>"$err" || status=$?
 
-  if (( status == 124 )); then
-    RUN_ERROR="timed out after ${limit}s"
-    return 1
-  fi
   if (( status != 0 )); then
     RUN_ERROR="exit $status. $(tail -3 "$err" | tr '\n' ' ')"
     return 1
@@ -147,15 +115,15 @@ run_backend() {
 
   local id
   case "$backend" in
-    claude)
+    cursor)
       if [[ "$(jq -r '.is_error // false' "$raw")" == true ]]; then
-        RUN_ERROR="$(jq -r '.result' "$raw")"
+        RUN_ERROR="$(jq -r '.result // "unknown error"' "$raw")"
         return 1
       fi
       WORKER_TEXT="$(jq -r '.result' "$raw")"
-      id="$(jq -r '.session_id' "$raw")"
-      WORKER_IN="$(jq -r '.usage.input_tokens // 0' "$raw")"
-      WORKER_OUT="$(jq -r '.usage.output_tokens // 0' "$raw")"
+      id="$(jq -r '.session_id // empty' "$raw")"
+      WORKER_IN="$(jq -r '.usage.inputTokens // 0' "$raw")"
+      WORKER_OUT="$(jq -r '.usage.outputTokens // 0' "$raw")"
       ;;
     codex)
       if [[ ! -s "$raw.msg" ]]; then
@@ -180,7 +148,7 @@ run_backend() {
 # Like grunt_worker, but returns 1 with WORKER_ERROR set instead of exiting, so
 # a caller can fall back to another reviewer.
 grunt_try() {
-  local backend="$1" model="$2" limit="$3" access="$4" prompt="$5" session="${6:-}"
+  local backend="$1" model="$2" access="$3" prompt="$4" session="${5:-}"
   local raw err started id="" resumed=""
   # A caller that must clean up after a killed worker gives grunt_try a
   # directory of its own, since its own rm never runs then.
@@ -205,7 +173,7 @@ grunt_try() {
     fi
   fi
 
-  if ! run_backend "$backend" "$model" "$limit" "$access" "$id" "$prompt"; then
+  if ! run_backend "$backend" "$model" "$access" "$id" "$prompt"; then
     WORKER_ERROR="$RUN_ERROR"
     rm -f "$raw" "$raw.msg" "$err"
     return 1

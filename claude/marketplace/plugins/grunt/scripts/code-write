@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Hand implementation steps to the worker model. The worker edits files in a
-# git worktree; the caller plans, reviews each step's diff, and applies the
-# finished task to the main working tree.
+# git worktree; the caller plans, gates each step on its check, reviews the
+# finished task once, and applies it to the main working tree.
 #
 #   code-write start  <task> [--with-uncommitted | --from-head]
 #   code-write step   <task> --spec "<what to build>" --check "<cmd>" [--continue]
@@ -68,6 +68,44 @@ has_changes() {
   [[ -n "$(git -C "$worktree" status --porcelain -- .)" ]]
 }
 
+# #region agent log
+# Debug NDJSON for session 6ca906 (review PID / abort kill). Remove after verify.
+debug_log() {
+  local hyp="$1" msg="$2" data="$3"
+  printf '{"sessionId":"6ca906","hypothesisId":"%s","location":"code-write","message":"%s","data":%s,"timestamp":%s}\n' \
+    "$hyp" "$msg" "$data" "$(($(date +%s) * 1000))" \
+    >>/Users/natios/Coding/.dotfiles/.cursor/debug-6ca906.log 2>/dev/null || true
+}
+# #endregion
+
+# Kill an in-flight `code-write review` for this task (other shell), if any.
+kill_review_if_running() {
+  local pid_file rpid
+  pid_file="$(state_file review-pid)"
+  [[ -s "$pid_file" ]] || {
+    # #region agent log
+    debug_log "C" "abort_no_review_pid" "{\"task\":\"$task\"}"
+    # #endregion
+    return 0
+  }
+  rpid="$(cat "$pid_file")"
+  rm -f "$pid_file"
+  if [[ "$rpid" =~ ^[0-9]+$ ]] && kill -0 "$rpid" 2>/dev/null; then
+    # #region agent log
+    debug_log "C" "abort_killing_review" "{\"task\":\"$task\",\"pid\":$rpid}"
+    # #endregion
+    kill -- -"$rpid" 2>/dev/null || kill "$rpid" 2>/dev/null || true
+    wait "$rpid" 2>/dev/null || true
+    # #region agent log
+    debug_log "C" "abort_killed_review" "{\"task\":\"$task\",\"pid\":$rpid,\"alive\":$(kill -0 "$rpid" 2>/dev/null && echo true || echo false)}"
+    # #endregion
+  else
+    # #region agent log
+    debug_log "C" "abort_review_already_dead" "{\"task\":\"$task\",\"pid\":\"$rpid\"}"
+    # #endregion
+  fi
+}
+
 start() {
   local carry=""
   case "${1:-}" in
@@ -105,8 +143,12 @@ start() {
   for dir in "${LINKED_DIRS[@]}"; do
     [[ -d "$root/$dir" && ! -e "$worktree/$dir" ]] || continue
     ln -s "$root/$dir" "$worktree/$dir"
-    grep -qxF "/$dir" "$exclude" 2>/dev/null || printf '/%s\n' "$dir" >> "$exclude"
+    grep -qxF "/$dir" "$exclude" 2>/dev/null || printf '/%s\n' "$dir" >>"$exclude"
   done
+
+  # The worker writes its permission config here before each step. It is
+  # plumbing, not part of the task, so keep it out of the commits and the diff.
+  grep -qxF '/.cursor/cli.json' "$exclude" 2>/dev/null || printf '/.cursor/cli.json\n' >>"$exclude"
 
   commit_all "grunt base"
   git -C "$worktree" rev-parse HEAD > "$(state_file base)"
@@ -146,8 +188,7 @@ $spec"
   fi
 
   cd "$worktree"
-  GRUNT_MAIN_ROOT="$root" \
-  grunt_worker claude "$GRUNT_CODER_MODEL" "$GRUNT_CODER_TIMEOUT" edit "You implement one step of a plan in this repository. A reviewer reads your diff when you finish.
+  grunt_worker cursor "$GRUNT_CODER_MODEL" edit "You implement one step of a plan in this repository. A reviewer reads the whole task when every step is done.
 
 - Work inside this directory. Edit files and run commands. The caller commits, so leave git as it is.
 - Address files by relative path. Absolute paths that point outside this directory are refused.
@@ -234,10 +275,15 @@ End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
 
   cd "$worktree"
   # Two reviewers read the series at once: Sol through the codex CLI and the
-  # ocgo worker. Sol is optional, so a failed or timed-out run only costs its
-  # findings; a changes-needed verdict from either reviewer fails the review.
-  # The ocgo worker is required.
-  local sol_status=0 sol_text="" sol_verdict ocgo_text ocgo_verdict
+  # cursor worker. Sol is optional, so a failed run only costs its findings; a
+  # changes-needed verdict from either reviewer fails the review. The cursor
+  # worker is required. Record this process so `abort` can kill an in-flight
+  # review before removing the worktree.
+  printf '%s\n' "$$" >"$(state_file review-pid)"
+  # #region agent log
+  debug_log "C" "review_start" "{\"task\":\"$task\",\"pid\":$$,\"diffLines\":$(printf '%s' "$diff" | wc -l | tr -d ' ')}"
+  # #endregion
+  local sol_status=0 sol_text="" sol_verdict cursor_text cursor_verdict
   # The EXIT trap runs after this function's locals are gone, so the PID and
   # temp paths it cleans up stay global. The directory is what survives a
   # killed worker: grunt_try's own cleanup never runs in that case.
@@ -246,7 +292,7 @@ End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
   sol_err="$sol_tmp/err"
   set -m
   (
-    if GRUNT_WORKER_TMP="$sol_tmp" grunt_try codex "$GRUNT_REVIEW_MODEL" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"; then
+    if GRUNT_WORKER_TMP="$sol_tmp" grunt_try codex "$GRUNT_REVIEW_MODEL" read "$prompt"; then
       printf '%s' "$WORKER_TEXT" > "$sol_out"
     else
       printf '%s' "$WORKER_ERROR" > "$sol_err"
@@ -255,17 +301,17 @@ End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
   ) &
   sol_pid=$!
   set +m
-  # timeout puts its child in its own process group, so signal that child
-  # first; timeout forwards the signal. Then kill the job's group.
-  trap 'pkill -TERM -P "$sol_pid" 2>/dev/null || true; kill -- -"$sol_pid" 2>/dev/null || true; rm -rf "$sol_tmp"' EXIT
+  # Signal the job's process group so a background Sol run dies with us.
+  trap 'pkill -TERM -P "$sol_pid" 2>/dev/null || true; kill -- -"$sol_pid" 2>/dev/null || true; rm -rf "$sol_tmp"; rm -f "$(state_file review-pid)"' EXIT
 
-  grunt_worker claude "$GRUNT_CODER_MODEL" "$GRUNT_REVIEW_TIMEOUT" read "$prompt"
-  ocgo_text="$WORKER_TEXT"
+  grunt_worker cursor "$GRUNT_CODER_MODEL" read "$prompt"
+  cursor_text="$WORKER_TEXT"
 
   wait "$sol_pid" || sol_status=$?
   trap - EXIT
+  rm -f "$(state_file review-pid)"
 
-  printf '## review: ocgo\n%s\n\n' "$ocgo_text"
+  printf '## review: cursor\n%s\n\n' "$cursor_text"
   if (( sol_status == 0 )) && [[ -s "$sol_out" ]]; then
     sol_text="$(cat "$sol_out")"
     printf '## review: %s (codex)\n%s\n\n' "$GRUNT_REVIEW_MODEL" "$sol_text"
@@ -276,21 +322,24 @@ End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
 
   grunt_log "review" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
 
-  ocgo_verdict="$(printf '%s\n' "$ocgo_text" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
+  cursor_verdict="$(printf '%s\n' "$cursor_text" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
   sol_verdict="$(printf '%s\n' "$sol_text" | grep -o 'VERDICT: [a-z-]*' | tail -1 || true)"
   if [[ -n "$sol_text" && -z "$sol_verdict" ]]; then
     printf 'review: sol (codex) gave no verdict line; read its findings above.\n' >&2
   fi
 
-  case "$ocgo_verdict" in
+  case "$cursor_verdict" in
     "VERDICT: clean"|"VERDICT: changes-needed") ;;
     *)
-      printf '\nreview: the ocgo reviewer gave no verdict line. Treat the task as unreviewed and rerun.\n' >&2
+      printf '\nreview: the cursor reviewer gave no verdict line. Treat the task as unreviewed and rerun.\n' >&2
       exit 1
       ;;
   esac
-  if [[ "$ocgo_verdict" == "VERDICT: changes-needed" || "$sol_verdict" == "VERDICT: changes-needed" ]]; then
-    printf '\nreview: changes needed. Fix the findings yourself in the worktree, or send them back with:\n  code-write step %s --continue --spec "<review notes>" --check "<cmd>"\nThen review again.\n' "$task" >&2
+  if [[ "$cursor_verdict" == "VERDICT: changes-needed" || "$sol_verdict" == "VERDICT: changes-needed" ]]; then
+    # #region agent log
+    debug_log "A" "review_changes_needed" "{\"task\":\"$task\",\"cursor\":\"$cursor_verdict\",\"sol\":\"${sol_verdict:-none}\"}"
+    # #endregion
+    printf '\nreview: changes needed. Small findings: fix them yourself in the worktree, then finish (do not re-run dual review). Larger findings: send them back with:\n  code-write step %s --continue --spec "<review notes>" --check "<cmd>"\nthen dual-review once more.\n' "$task" >&2
     exit 1
   fi
   printf 'review: clean\n'
@@ -320,6 +369,7 @@ finish() {
 
 abort() {
   require_worktree
+  kill_review_if_running
   git -C "$root" worktree remove --force "$worktree"
   git -C "$root" branch -q -D "$branch"
   printf 'removed %s\n' "$worktree"
