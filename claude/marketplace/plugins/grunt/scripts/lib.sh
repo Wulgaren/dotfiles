@@ -13,9 +13,16 @@
 
 GRUNT_MODEL="${GRUNT_MODEL:-}"
 GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-deepseek/deepseek-v4.1-flash-fast}"
-GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-gpt-6.1-sol}"
+GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-gpt-6.2-sol}"
 GRUNT_FALLBACK_MODEL="${GRUNT_FALLBACK_MODEL:-deepseek/deepseek-v4.1-flash}"
 GRUNT_LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
+
+# The editing worker's OS sandbox. On macOS, sandbox-exec fences every write to
+# the worktree and the paths below, so a worker that ignores its spec still
+# cannot reach the user's files. A Command Code deny rule cannot do this: it
+# sees tools and commands, not shell redirects, and `echo x > ~/file` is
+# neither. Set GRUNT_SANDBOX=0 to switch it off. Other platforms run unfenced.
+GRUNT_SANDBOX="${GRUNT_SANDBOX:-1}"
 
 # Commands an editing worker may not run. The worker runs under --yolo, which
 # approves every command without a prompt, so this list is what stands between
@@ -27,8 +34,32 @@ GRUNT_LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 GRUNT_DENY=(
   'Shell(rm)' 'Shell(rmdir)' 'Shell(mv)' 'Shell(dd)' 'Shell(truncate)'
   'Shell(shred)' 'Shell(sudo)' 'Shell(git push)' 'Shell(git reset)'
-  'Shell(git clean)' 'Shell(git restore)' 'Shell(npm install -g)'
+  'Shell(git clean)' 'Shell(git restore)' 'Shell(git checkout)'
+  'Shell(find)' 'Shell(npm install -g)'
 )
+
+# Paths the worker may write outside its worktree. The session temp dir is where
+# a test runner and sandbox-exec itself need scratch space; the user's Command
+# Code state is session bookkeeping, not project data.
+GRUNT_SANDBOX_RW=(
+  "$HOME/.commandcode"
+  "${TMPDIR:-/tmp}"
+  /private/tmp
+  /private/var/folders
+)
+
+# sandbox_profile <worktree>
+# Prints a macOS seatbelt profile that denies every write except the worktree
+# and GRUNT_SANDBOX_RW. Reads stay open, which is what the worker needs.
+sandbox_profile() {
+  local worktree="$1" path
+  printf '(version 1)\n(allow default)\n(deny file-write*)\n(allow file-write*\n'
+  printf '  (subpath "%s")\n' "$worktree"
+  for path in "${GRUNT_SANDBOX_RW[@]}"; do
+    printf '  (subpath "%s")\n' "$path"
+  done
+  printf '  (subpath "/dev")\n)\n'
+}
 
 # The permission config handed to command-code, written into the worker's own
 # .commandcode/settings.local.json so the deny list travels with the worker.
@@ -58,7 +89,7 @@ grunt_fail() {
 # GRUNT_EFFORT, when set, picks the commandcode reasoning effort.
 run_backend() {
   local backend="$1" model="$2" access="$3" session="$4" input="$5" status=0
-  local cmd=() prompt_arg="$input"
+  local cmd=() prompt_arg="$input" binary="" profile=""
   case "$backend" in
     commandcode)
       # -p makes one headless run and streams NDJSON; its final `result` line
@@ -66,6 +97,7 @@ run_backend() {
       #
       # --trust answers the project-trust prompt and --skip-onboarding keeps a
       # first run from waiting on interactive setup.
+      binary=command-code
       cmd=(command-code -p --output-format json --trust --skip-onboarding --no-skills)
       [[ -n "$model" ]] && cmd+=(--model "$model")
       [[ -n "${GRUNT_EFFORT:-}" ]] && cmd+=(--effort "$GRUNT_EFFORT")
@@ -76,6 +108,13 @@ run_backend() {
         cmd+=(--yolo)
         mkdir -p "$PWD/.commandcode"
         commandcode_deny_json >"$PWD/.commandcode/settings.local.json"
+        # A deny rule sees commands and tools, not shell redirects, so the OS
+        # sandbox is what actually keeps writes inside the worktree.
+        if [[ "$GRUNT_SANDBOX" == 1 ]] && command -v sandbox-exec >/dev/null; then
+          profile="$(mktemp)"
+          sandbox_profile "$PWD" > "$profile"
+          cmd=(sandbox-exec -f "$profile" "${cmd[@]}")
+        fi
       else
         # A reading worker gets read-only tools; anything that would need
         # approval is denied instead of asked.
@@ -84,17 +123,20 @@ run_backend() {
       [[ -n "$session" ]] && cmd+=(--resume "$session")
       ;;
     codex)
-      # codex exec reads the prompt from stdin, and -o keeps the final
-      # message alone instead of mixing it with progress lines.
-      cmd=(codex exec -m "$model" -s read-only -C "$PWD"
+      # codex exec reads the prompt from stdin, and -o keeps the final message
+      # alone instead of mixing it with progress lines. --json carries the
+      # per-turn token counts that -o drops, so the review is priced like a
+      # worker instead of logging zero.
+      binary=codex
+      cmd=(codex exec -m "$model" -s read-only -C "$PWD" --json
         -c model_reasoning_effort=medium
         --output-last-message "$raw.msg")
       prompt_arg=""
       ;;
   esac
 
-  if ! command -v "${cmd[0]}" >/dev/null; then
-    RUN_ERROR="${cmd[0]} not on PATH"
+  if ! command -v "$binary" >/dev/null; then
+    RUN_ERROR="$binary not on PATH"
     return 1
   fi
 
@@ -103,6 +145,7 @@ run_backend() {
   # The workers load the project's own instruction files, so the guard stays off
   # for them: GRUNT_OFF=1 lets a worker read whole files.
   GRUNT_OFF=1 "${cmd[@]}" <<<"$input" >"$raw" 2>"$err" || status=$?
+  [[ -n "$profile" ]] && rm -f "$profile"
 
   if (( status != 0 )); then
     RUN_ERROR="exit $status. $(tail -3 "$err" | tr '\n' ' ')"
@@ -140,8 +183,17 @@ run_backend() {
       fi
       WORKER_TEXT="$(cat "$raw.msg" 2>/dev/null || true)"
       id=""
-      WORKER_IN=0
-      WORKER_OUT=0
+      # The last turn.completed carries the run's totals. Without them the
+      # review logs zero and every savings figure reads high.
+      local usage
+      usage="$(jq -sc 'map(select(.type == "turn.completed")) | last // empty' "$raw" 2>/dev/null)"
+      if [[ -n "$usage" ]]; then
+        WORKER_IN="$(jq -r '.usage.input_tokens // 0' <<<"$usage")"
+        WORKER_OUT="$(jq -r '.usage.output_tokens // 0' <<<"$usage")"
+      else
+        WORKER_IN=0
+        WORKER_OUT=0
+      fi
       ;;
   esac
 
