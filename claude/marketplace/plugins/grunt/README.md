@@ -1,11 +1,11 @@
 # grunt
 
-Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model: Cursor's `auto` mode, through the `cursor-agent` CLI. The worker is a separate headless Cursor agent, so it does not depend on whichever provider the main session runs on. It reads the project's `CLAUDE.md` and `AGENTS.md`, and picks up the project's `.cursor/hooks.json` when the working directory has one.
+Routes the expensive, low-thinking parts of Claude Code work to a cheap worker model through the `command-code` CLI. The worker is a separate headless Command Code agent, so it does not depend on whichever provider the main session runs on. It reads the project's `CLAUDE.md` and `AGENTS.md`, and picks up the project's `.commandcode` settings when the working directory has one.
 
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Each step is gated on its check. When the series is done, Claude reads the whole task diff. Dual-agent review (GPT-6.1 Sol through `codex`, plus `cursor-agent`) runs only when the skill says the task is review-worthy: behaviour/API/data risk, multi-file structure, weak checks, or a planner-requested second opinion. Presentation/CSS/copy/config that already passed its check skips Cursor+Sol after the planner's own diff read. Sol is optional on a run; a returned `changes-needed` still fails that review. Planner self-fixes then finish without a second dual review; a worker continue gets at most one more. `abort` kills an in-flight review. `finish` applies the task to the working tree as uncommitted edits.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Each step is gated on its check. When the series is done, Claude reads the whole task diff. One review pass (GPT-6.1 Sol through `codex`) runs only when the skill says the task is review-worthy: behaviour/API/data risk, multi-file structure, weak checks, or a planner-requested second opinion. When Sol is missing, signed out, or out of credits, the same review runs on Command Code's `deepseek/deepseek-v4.1-flash` at high effort. Presentation/CSS/copy/config that already passed its check skips the review after the planner's own diff read. Planner self-fixes then finish without a second review; a worker continue gets at most one more. `abort` kills an in-flight review. `finish` applies the task to the working tree as uncommitted edits.
 
 The read guard works in Claude Code, Cursor, and OpenCode. `guard-read` owns the read rules; only the hook wiring differs.
 
@@ -28,7 +28,7 @@ claude plugin install grunt@natios
 
 The marketplace lives in this dotfiles repo under `claude/marketplace` and is linked to `~/.claude/local-marketplace`.
 
-The worker needs the `cursor-agent` CLI on `PATH`, signed in with `cursor-agent login`. The Sol review needs the `codex` CLI on `PATH`, signed in to an account that can reach `GRUNT_REVIEW_MODEL`.
+The worker needs the `command-code` CLI on `PATH`, signed in with `command-code login`. The Sol review needs the `codex` CLI on `PATH`, signed in to an account that can reach `GRUNT_REVIEW_MODEL`.
 
 Cursor and OpenCode need no install step. The plugin skills are linked into `.cursor/skills`, `link.sh sync` fans them out to the agent config directories, and OpenCode discovers `opencode/plugins/grunt` from the linked config directory.
 
@@ -40,27 +40,26 @@ Set in `~/.claude/settings.json` under `env`:
 |---|---|---|
 | `GRUNT_MIN_LINES` | `1000` | Block reads above this line count |
 | `GRUNT_MAX_BYTES` | `6000` | Cap on shell read stdout; the command runs once and the cut is marked |
-| `GRUNT_MODEL` | `auto` | bulk-read model |
-| `GRUNT_CODER_MODEL` | `auto` | code-write model |
+| `GRUNT_MODEL` | unset | bulk-read model; unset uses your configured `command-code` model |
+| `GRUNT_CODER_MODEL` | unset | code-write model; unset uses your configured `command-code` model |
 | `GRUNT_REVIEW_MODEL` | `gpt-6.1-sol` | Sol's codex model |
-| `GRUNT_SANDBOX` | `1` | Fence an editing worker's writes |
+| `GRUNT_FALLBACK_MODEL` | `deepseek/deepseek-v4.1-flash` | review model when Sol fails, run at high effort |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
-`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are `cursor-agent` model names; `cursor-agent models` lists them, and `auto` lets Cursor pick. `GRUNT_REVIEW_MODEL` is a codex CLI model name. The cursor reviewer runs on `GRUNT_CODER_MODEL`.
+`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are `command-code --list-models` names. `GRUNT_REVIEW_MODEL` is a codex CLI model name.
 
 ## The editing worker's reach
 
-An editing worker runs with `--trust`, so a permission prompt never stops it, and it can run any shell command the deny list does not name. Two things fence that in.
+An editing worker runs with `--yolo`, so a permission prompt never stops it, and it can run any shell command the deny list does not name.
 
-- `--sandbox enabled` is the write fence. A worker that writes outside its working directory gets `operation not permitted`, and its retry with elevated permissions is refused. `code-write`'s worktree is therefore the only place an editing worker can write, and the main repository stays out of reach without naming any path. macOS `/tmp` is the exception: the sandbox treats it as scratch space.
-- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run. The worker carries that list in its own `.cursor/cli.json`, so `code-write` needs no install in your tree. A denied call comes back to the worker as a refusal, not a prompt.
+- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run. The worker carries that list in its own `.commandcode/settings.local.json`, so `code-write` needs no install in your tree. A denied call comes back to the worker as a refusal, not a prompt.
+- A deny rule wins over `--yolo` and over any allow rule, and Command Code matches it against each subcommand of a chain, so `cd x && rm y` is still refused. A wrapper such as `bash -c 'rm y'` or a full path sits outside what the rule can see.
+- Command Code has no write sandbox, so the worktree is where the worker is told to work, not a fence. Keep the spec tight and read the diff.
 
-Cursor matches a deny entry as a command prefix and blocks it wherever the command appears, so the list does not have to spell out `cd x && rm y`, `bash -c 'rm y'` or `/bin/rm y`; a probe confirmed all three are refused.
+A reading worker runs with `--permission-mode dont-ask`: read-only tools run, and anything that would need approval is denied.
 
-A reading worker runs in `ask` mode, which offers it reading and analysis only. A bulk-read worker and the cursor reviewer therefore carry no deny list.
-
-The write fence is not a read fence: a worker reads whatever you can read.
+Neither mode is a read fence: a worker reads whatever you can read.
 
 
 ## Log

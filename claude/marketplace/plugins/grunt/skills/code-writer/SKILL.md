@@ -1,11 +1,11 @@
 ---
 name: code-writer
-description: Hand a planned implementation step to the grunt worker, which edits files in a git worktree while you write the specs and gate dual-agent review when the task is done. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines. Skip Cursor+Sol review for presentation/CSS/copy/config when checks passed and you already read the full task diff.
+description: Hand a planned implementation step to the grunt worker, which edits files in a git worktree while you write the specs and gate the review when the task is done. Use for every step that writes new code, including the fix that ends a debugging session. Keep diagnosis, probes, and security, money and migration code for yourself; the fix goes to the worker, even when it is a few lines. Skip the review for presentation/CSS/copy/config when checks passed and you already read the full task diff.
 ---
 
 # code-writer
 
-You are the planner and reviewer. The worker writes the code. Each _step_ is a written _spec_ in, a committed diff out. Gate each step on its check. Dual-agent review is gated (below), not automatic. The task lands in the user's working tree as uncommitted edits.
+You are the planner and reviewer. The worker writes the code. Each _step_ is a written _spec_ in, a committed diff out. Gate each step on its check. The review is gated (below), not automatic. The task lands in the user's working tree as uncommitted edits.
 
 Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it from the main repository.
 
@@ -30,19 +30,19 @@ Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it f
 
 4. **Review.** When every step's check has passed, read the whole task diff against the plan and the repo's rules. Treat the worker's bullets as claims and the diff as truth.
 
-   **Run** `code-write review <task> --intent "<one sentence>"` (Cursor + Sol on the full series) only when any of these is true:
+   **Run** `code-write review <task> --intent "<one sentence>"` (Sol on the full series, falling back to Command Code deepseek flash at high effort when Sol fails) only when any of these is true:
    - new or changed behaviour in logic, API, data, auth, money, or migrations
    - multi-file structural change (new module, shared helper, cross-layer wiring)
    - the check is weak relative to the risk (typecheck-only on a behaviour change, or no focused test where one belongs)
    - your own diff read finds a real risk and you want a second opinion
 
-   **Skip** dual-agent review when all of these are true: checks passed; the diff is presentation, CSS, copy, config, or wiring (or a small self-fix after a prior pass); you personally read the full task diff and found nothing that needs another agent. Print `review: skipped (planner; <reason>)` and go to finish. `finish` does not require a prior `review: clean`.
+   **Skip** the review when all of these are true: checks passed; the diff is presentation, CSS, copy, config, or wiring (or a small self-fix after a prior pass); you personally read the full task diff and found nothing that needs another agent. Print `review: skipped (planner; <reason>)` and go to finish. `finish` does not require a prior `review: clean`.
 
-   When you do run dual-agent review:
+   When you do run the review:
    - Findings are claims. Verify each against the code.
-   - Small findings: fix them yourself in the worktree, re-read the delta, then **finish**. Do not re-run dual review for planner self-fixes.
-   - Larger findings: `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`, then dual-review the series **once** more. Cap at one dual-review round-trip per task unless a new high-severity risk appears after that continue.
-   - A cursor-agent failure or a missing cursor verdict is not clean; rerun that review once.
+   - Small findings: fix them yourself in the worktree, re-read the delta, then **finish**. Do not re-run the review for planner self-fixes.
+   - Larger findings: `code-write step <task> --continue --spec "<review notes>" --check "<cmd>"`, then review the series **once** more. Cap at one review round-trip per task unless a new high-severity risk appears after that continue.
+   - The review runs on Sol and falls back to Command Code deepseek flash at high effort when Sol fails. A missing verdict is not clean; rerun the review once.
 
    On user stop or `code-write abort`, abort before starting another review. Abort kills an in-flight review for that task.
 
@@ -52,5 +52,5 @@ Script: `~/.claude/local-marketplace/plugins/grunt/scripts/code-write`. Run it f
 
 - Worktrees live under `~/.cache/grunt/<repo>-<task>` (`$XDG_CACHE_HOME` is honored), inside the home directory rather than the system temp dir, so container builds that mount `$HOME` can see them.
 - The worktree holds tracked files, any carried edits, and symlinks to a root-level `node_modules` or `.venv`. Other ignored files such as `.env` stay behind. When a check needs them, put the setup in the spec.
-- The worker is a headless Cursor agent launched by `cursor-agent` on `GRUNT_CODER_MODEL`, so it reads the project's CLAUDE.md and AGENTS.md but not your Claude Code hooks or plugins. Its writes are fenced to the worktree by Cursor's `--sandbox`, and `rm`, `git push`, `sudo` and the other commands in `GRUNT_DENY` come back to it as a refusal; it works around them and says so in its bullets.
+- The worker is a headless Command Code agent launched by `command-code` on `GRUNT_CODER_MODEL`, so it reads the project's CLAUDE.md and AGENTS.md but not your Claude Code hooks or plugins. `rm`, `git push`, `sudo` and the other commands in `GRUNT_DENY` come back to it as a refusal; it works around them and says so in its bullets. Command Code has no write sandbox, so the worktree is where the worker is told to work, not a fence.
 - `--continue` resumes the worker's session and resends the original spec under your notes, so a resumed worker sees the whole task. A session saved by a backend the plugin no longer uses is dropped with a note on stderr, and the step starts a fresh worker with that same resent spec.

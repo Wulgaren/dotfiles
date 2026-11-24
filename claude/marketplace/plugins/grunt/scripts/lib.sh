@@ -7,39 +7,35 @@
 # non-zero with a readable reason when the run fails. A "backend:id" session
 # resumes that worker instead of starting one.
 #
-# Backends: cursor (workers, through the cursor-agent CLI) and codex (the
+# Backends: commandcode (workers, through the command-code CLI) and codex (the
 # whole-task review). Config vars and defaults are documented in the plugin
 # README.
 
-GRUNT_MODEL="${GRUNT_MODEL:-auto}"
-GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-auto}"
+GRUNT_MODEL="${GRUNT_MODEL:-}"
+GRUNT_CODER_MODEL="${GRUNT_CODER_MODEL:-}"
 GRUNT_REVIEW_MODEL="${GRUNT_REVIEW_MODEL:-gpt-6.1-sol}"
+GRUNT_FALLBACK_MODEL="${GRUNT_FALLBACK_MODEL:-deepseek/deepseek-v4.1-flash}"
 GRUNT_LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 
-# Commands an editing worker may not run. The worker runs under --trust, which
-# approves every command without a prompt, so this list and the sandbox below
-# are what stand between a worker and the user's data.
+# Commands an editing worker may not run. The worker runs under --yolo, which
+# approves every command without a prompt, so this list is what stands between
+# a worker and the user's data.
 #
-# Cursor matches an entry as a command prefix wherever the command appears, so
-# hiding it behind `cd x && ...`, `bash -c '...'` or a full path does not get
-# past the entry.
+# A Command Code deny rule wins over --yolo and the allow list, and it matches
+# each subcommand of a chain, so `cd x && rm y` is still refused. A wrapper
+# such as `bash -c 'rm y'` or a full path is outside what the rule can see.
 GRUNT_DENY=(
   'Shell(rm)' 'Shell(rmdir)' 'Shell(mv)' 'Shell(dd)' 'Shell(truncate)'
   'Shell(shred)' 'Shell(sudo)' 'Shell(git push)' 'Shell(git reset)'
   'Shell(git clean)' 'Shell(git restore)' 'Shell(npm install -g)'
 )
 
-# cursor-agent's sandbox, which fences a worker's writes to its working
-# directory even when the worker retries with elevated permissions. Set
-# GRUNT_SANDBOX=0 to switch it off.
-GRUNT_SANDBOX="${GRUNT_SANDBOX:-1}"
-
-# The permission config handed to cursor-agent, written into the worker's own
-# .cursor/cli.json so the deny list travels with the worker.
+# The permission config handed to command-code, written into the worker's own
+# .commandcode/settings.local.json so the deny list travels with the worker.
 #
-# cursor_deny_json
-cursor_deny_json() {
-  printf '%s\n' "${GRUNT_DENY[@]}" | jq -R . | jq -sc '{permissions: {allow: [], deny: .}}'
+# commandcode_deny_json
+commandcode_deny_json() {
+  printf '%s\n' "${GRUNT_DENY[@]}" | jq -R . | jq -sc '{permissions: {deny: .}}'
 }
 
 WORKER_TEXT=""
@@ -56,30 +52,34 @@ grunt_fail() {
   exit 1
 }
 
-# run_backend <cursor|codex> <model> <access> <session> <prompt>
+# run_backend <commandcode|codex> <model> <access> <session> <prompt>
 # Writes the CLI's output to $raw and stderr to $err (both owned by grunt_try),
 # then parses it into WORKER_*. Returns 1 with RUN_ERROR set on any failure.
+# GRUNT_EFFORT, when set, picks the commandcode reasoning effort.
 run_backend() {
   local backend="$1" model="$2" access="$3" session="$4" input="$5" status=0
   local cmd=() prompt_arg="$input"
   case "$backend" in
-    cursor)
-      # --print makes one headless run and returns JSON, with the prompt as a
-      # positional argument.
+    commandcode)
+      # -p makes one headless run and streams NDJSON; its final `result` line
+      # carries the answer. The prompt arrives on stdin.
       #
-      # --trust answers the workspace-trust prompt that would otherwise stop a
-      # headless run, and --sandbox enabled is the write fence.
-      cmd=(cursor-agent -p --trust --output-format json --model "$model")
-      [[ "$GRUNT_SANDBOX" == 1 ]] && cmd+=(--sandbox enabled)
+      # --trust answers the project-trust prompt and --skip-onboarding keeps a
+      # first run from waiting on interactive setup.
+      cmd=(command-code -p --output-format json --trust --skip-onboarding --no-skills)
+      [[ -n "$model" ]] && cmd+=(--model "$model")
+      [[ -n "${GRUNT_EFFORT:-}" ]] && cmd+=(--effort "$GRUNT_EFFORT")
       if [[ "$access" == edit ]]; then
-        # An editing worker carries the deny list in its own .cursor/cli.json,
-        # which takes an allow list and a deny list together.
-        mkdir -p "$PWD/.cursor"
-        cursor_deny_json >"$PWD/.cursor/cli.json"
+        # --yolo answers every prompt. The deny list below wins over it and
+        # over any allow rule, and the worker's own settings file keeps the
+        # rest of the tree untouched.
+        cmd+=(--yolo)
+        mkdir -p "$PWD/.commandcode"
+        commandcode_deny_json >"$PWD/.commandcode/settings.local.json"
       else
-        # A reading worker runs in ask mode, which offers it reading and
-        # analysis only, so it needs no deny list.
-        cmd+=(--mode ask)
+        # A reading worker gets read-only tools; anything that would need
+        # approval is denied instead of asked.
+        cmd+=(--permission-mode dont-ask)
       fi
       [[ -n "$session" ]] && cmd+=(--resume "$session")
       ;;
@@ -115,15 +115,23 @@ run_backend() {
 
   local id
   case "$backend" in
-    cursor)
-      if [[ "$(jq -r '.is_error // false' "$raw")" == true ]]; then
-        RUN_ERROR="$(jq -r '.result // "unknown error"' "$raw")"
+    commandcode)
+      # The stream ends with one {"type":"result",...} line; everything above
+      # it is progress.
+      local result
+      result="$(jq -sc 'map(select(.type == "result")) | last // empty' "$raw")"
+      if [[ -z "$result" ]]; then
+        RUN_ERROR="no result line. $(tail -3 "$err" | tr '\n' ' ')"
         return 1
       fi
-      WORKER_TEXT="$(jq -r '.result' "$raw")"
-      id="$(jq -r '.session_id // empty' "$raw")"
-      WORKER_IN="$(jq -r '.usage.inputTokens // 0' "$raw")"
-      WORKER_OUT="$(jq -r '.usage.outputTokens // 0' "$raw")"
+      if [[ "$(jq -r '.subtype // "success"' <<<"$result")" != success ]]; then
+        RUN_ERROR="$(jq -r '.finalText // .error // "run failed"' <<<"$result")"
+        return 1
+      fi
+      WORKER_TEXT="$(jq -r '.finalText' <<<"$result")"
+      id="$(jq -r '.sessionId // empty' <<<"$result")"
+      WORKER_IN="$(jq -r '.usage.inputTokens // 0' <<<"$result")"
+      WORKER_OUT="$(jq -r '.usage.outputTokens // 0' <<<"$result")"
       ;;
     codex)
       if [[ ! -s "$raw.msg" ]]; then

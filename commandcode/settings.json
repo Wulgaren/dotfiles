@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "defaultMode": "accept-edits",
+    "defaultMode": "yolo",
     "allow": [
       "Shell(git add *)",
       "Shell(git commit *)",
