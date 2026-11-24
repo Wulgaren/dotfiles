@@ -1,0 +1,34 @@
+# Vendored skills and where they came from. Read by ./skills-check.sh.
+# Columns, tab separated:
+#   skill            folder under .agents/skills
+#   repo             GitHub owner/repo
+#   upstream-path    skill folder inside that repo
+#   adopted-commit   upstream commit the local copy was taken from (blank if unknown)
+#   recorded-hash    upstream folder hash at that commit (blank if unknown)
+#
+# An empty adopted-commit means no upstream version ever matched the local folder,
+# so the local copy is a rewrite or never came from that path. The check reports
+# those as "unknown-baseline" instead of guessing behind vs edited.
+#
+# Folders in .agents/skills that are absent here are hand-written and are not checked.
+blast-radius	cursor/plugins	pstack/skills/blast-radius	ca782ed8b3c2c521cead8e1720d55c3a5dbf2347	f9ec7353939c4449f2edb1cd195049f477b9ba6c0a869de75c7b440e27295f01
+code-review	mattpocock/skills	skills/engineering/code-review		
+diagnosing-bugs	mattpocock/skills	skills/engineering/diagnosing-bugs	d65391149dbb5fe76478e76fa8d5122b2aa5a70e	87c78ae966e591f9ceb177789cc5cc9de69277cd26679ffd36ca5300f430d513
+find-skills	vercel-labs/skills	skills/find-skills	57217cf86ba38148a57af9e90d14a4c049558330	7bc223e2aafbdbf6e50ea243ba6ef67fe432bb069ab439fea0390795dac0bf7f
+frontend-design	anthropics/skills	skills/frontend-design	e4bb5d960d87126ff3b3a8af1a104b7db67560ba	83485963700bcf11d5bf78118facb301676b69d918fee2e45a95e7f1a2840f6c
+grill-me	mattpocock/skills	skills/productivity/grill-me		
+handoff	mattpocock/skills	skills/productivity/handoff		
+how	poteto/how	skills/how	b1ef42969ea7a2bb50aa26c2480274828a0385e7	31a11c452e6dc6c0cf149e1f2c79912b7fb07306bdc5a9b8a9b26d2298dab027
+modern-web-guidance	GoogleChrome/modern-web-guidance	skills/modern-web-guidance	2b4aa13a72dd47cd135b06ce5abfccd92e19b24f	1a97aea5d1c5abbf1b7b022ae7a2833a014627f741ba3cbd8cb6249a3ab359db
+netlify-edge-functions	netlify/context-and-tools	skills/netlify-edge-functions		
+principle-fix-root-causes	cursor/plugins	pstack/skills/principle-fix-root-causes	ca782ed8b3c2c521cead8e1720d55c3a5dbf2347	caa4470c10bb7e5c58fac5da77154c5536a89e4549e292f8ecff8ac61b2b4546
+principle-guard-the-context-window	cursor/plugins	pstack/skills/principle-guard-the-context-window		
+principle-laziness-protocol	cursor/plugins	pstack/skills/principle-laziness-protocol		
+principle-subtract-before-you-add	cursor/plugins	pstack/skills/principle-subtract-before-you-add		
+python-best-practices	nathan-gage/python-skills	skills/python-best-practices	c5b961b32447e1be7dedea45ef166e74bb987f77	4e32bb501f857ac1d031455574d9c84f89f2aeaf1346d2b9fd1ad677ef50bdec
+tdd	cursor/plugins	pstack/skills/tdd		
+typescript-best-practices	cursor/plugins	pstack/skills/typescript-best-practices	ca782ed8b3c2c521cead8e1720d55c3a5dbf2347	fb35e49d1b6a48fa42d81fff0e4e9834b8f98e0ebcf188203680f1f4265df690
+unslop	cursor/plugins	pstack/skills/unslop	ca782ed8b3c2c521cead8e1720d55c3a5dbf2347	4bbcb6719a8f0f6f7fb46752e1c360791d7758a837708e300a06fc7d6907938c
+vercel-react-best-practices	vercel-labs/agent-skills	skills/react-best-practices	5a37a6329fbad3666c3207392a6a7c0110e92efb	7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299
+why	cursor/plugins	pstack/skills/why	ca782ed8b3c2c521cead8e1720d55c3a5dbf2347	2050d10fff1d0fa6e19c0a96552a641af6a24f012614955a6dcf3763bf54ac3c
+writing-for-agents	mattpocock/skills	skills/productivity/writing-for-agents	d65391149dbb5fe76478e76fa8d5122b2aa5a70e	e79a2476b2417b228922453478d9505a6b9af19f3a412e560728ce62ed3555ca
