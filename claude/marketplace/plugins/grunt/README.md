@@ -54,9 +54,9 @@ Set in `~/.claude/settings.json` under `env`:
 
 An editing worker runs with `--yolo`, so a permission prompt never stops it, and it can run any shell command the deny list does not name.
 
-- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run. The worker carries that list in its own `.commandcode/settings.local.json`, so `code-write` needs no install in your tree. A denied call comes back to the worker as a refusal, not a prompt.
+- `GRUNT_DENY` in `lib.sh` lists the commands the worker may not run. The worker carries that list in its own `.commandcode/settings.local.json`, so `code-write` needs no install in your tree. A denied call comes back to the worker as a refusal, not a prompt. The list names Unix commands and their cmd.exe equivalents (`del`, `erase`, `rd`, `ren`, `move`), because the worker's shell tool is cmd on Windows.
 - A deny rule wins over `--yolo` and over any allow rule, and Command Code matches it against each subcommand of a chain, so `cd x && rm y` is still refused. A wrapper such as `bash -c 'rm y'` or a full path sits outside what the rule can see.
-- A deny rule sees commands and tools, not shell redirects, so it cannot keep a worker inside the worktree: `echo x > ~/notes` passes every rule. On macOS, `sandbox-exec` supplies that fence, denying every write outside the worktree and the temp paths in `GRUNT_SANDBOX_RW`. Other platforms run unfenced, so the spec and the diff read carry the boundary. Keep the spec tight and read the diff.
+- A deny rule sees commands and tools, not shell redirects, so it cannot keep a worker inside the worktree: `echo x > ~/notes` passes every rule. On macOS, `sandbox-exec` supplies that fence, denying every write outside the worktree and the temp paths in `GRUNT_SANDBOX_RW`. Windows has no OS fence; the deny rules stop `rm` and `del` but not redirects, wrappers, or `powershell -Command`. Other platforms run unfenced. The spec and the diff read carry the boundary. Keep the spec tight and read the diff.
 
 A reading worker runs with `--permission-mode dont-ask`: read-only tools run, and anything that would need approval is denied.
 

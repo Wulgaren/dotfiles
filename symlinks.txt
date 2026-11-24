@@ -1,6 +1,6 @@
 # repo-path  destination
 # OS tags: mac: linux: win:  (untagged = all OS; if this OS has tagged lines for a repo, only those apply)
-# kinds: link | copy | linkeach (link each child dir) | note
+# kinds: link | copy | linkeach (link each child) | note
 
 # home
 link .aerospace.toml ~/.aerospace.toml
@@ -11,6 +11,7 @@ link .inputrc ~/.inputrc
 link .skhdrc ~/.skhdrc
 link .vimrc ~/.vimrc
 copy .gitconfig.local.example ~/.gitconfig.local
+note zshrc cp .zshrc.local.example .zshrc.local
 
 # ~/.config
 link btop ~/.config/btop
@@ -48,15 +49,23 @@ linkeach .cursor/skills ~/.claude/skills
 link AGENT.md ~/.claude/CLAUDE.md
 link claude/marketplace ~/.claude/local-marketplace
 
+# command code
+link commandcode/settings.json ~/.commandcode/settings.json
+
+# claude code
+link claude/settings.json ~/.claude/settings.json
+link claude/statusline.sh ~/.claude/statusline.sh
+link claude/statusline.ts ~/.claude/statusline.ts
+
+# scripts -> PATH
+linkeach scripts ~/.local/bin
+
 # mac app support
 link discordo mac:~/Library/Application Support/discordo
 link concord mac:~/Library/Application Support/concord
 
 # launch agents
 link skhd/com.natios.eject-key-remap.plist mac:~/Library/LaunchAgents/com.natios.eject-key-remap.plist
-
-# windows extras
-link zsh/windows/wmux-ssh.zsh win:~/.zsh/wmux-ssh.zsh
 
 # notes (printed on sync)
 note qutebrowser git clone https://github.com/catppuccin/qutebrowser.git qutebrowser/catppuccin

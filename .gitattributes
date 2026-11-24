@@ -1,0 +1,8 @@
+# This repo is checked out on macOS, Linux and Windows. Text files must land
+# with LF everywhere or shell scripts get a CRLF shebang and `ln` gets a CR in
+# the path (see symlinks.txt). core.autocrlf=true does the opposite, so pin it.
+* text=auto eol=lf
+
+*.wav binary
+*.png binary
+*.scpt binary

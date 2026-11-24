@@ -5,6 +5,12 @@
 
 set -euo pipefail
 
+# Git Bash copies instead of symlinking unless the msys runtime is told to use
+# native links. Set it here so the ln calls below always create real symlinks.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) export MSYS=winsymlinks:nativestrict ;;
+esac
+
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIST_FILE="$DOTFILES_DIR/symlinks.txt"
 
@@ -72,6 +78,10 @@ home_form() {
 ask_overwrite() {
   local path="$1"
   local reply
+  if ! { true < /dev/tty; } 2>/dev/null; then
+    echo "skip $path: no tty to confirm overwrite" >&2
+    return 1
+  fi
   # Read from the tty, not stdin: cmd_sync's loop feeds on a list_entries pipe,
   # and a bare read would swallow the next entry.
   read -r -p "Replace $path? [y/N] " reply < /dev/tty || return 1
@@ -117,6 +127,10 @@ do_symlink() {
 
   ensure_parent "$dest"
   ln -s "$src" "$dest"
+  if [[ ! -L "$dest" ]]; then
+    echo "error: $dest was copied instead of linked (msys without winsymlinks:nativestrict)" >&2
+    return 1
+  fi
   echo "link $dest -> $src"
 }
 
@@ -141,7 +155,7 @@ do_copy() {
   echo "copy $src -> $dest"
 }
 
-# Link each child directory of repo_rel into dest_raw (dest dir itself stays real)
+# Link each child of repo_rel into dest_raw (dest dir itself stays real)
 do_linkeach() {
   local repo_rel="$1" dest_raw="$2"
   local src child
@@ -150,7 +164,8 @@ do_linkeach() {
     echo "skip linkeach $repo_rel: missing in repo" >&2
     return 0
   fi
-  for child in "$src"/*/; do
+  for child in "$src"/*; do
+    [[ -e "$child" ]] || continue
     child="$(basename "$child")"
     do_symlink "$repo_rel/$child" "$dest_raw/$child"
   done
@@ -160,6 +175,7 @@ do_linkeach() {
 list_entries() {
   local line kind rest repo dest name msg
   while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
     line="${line#"${line%%[![:space:]]*}"}"
     [[ -z "$line" || "$line" == \#* ]] && continue
     kind="${line%% *}"

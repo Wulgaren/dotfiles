@@ -1,8 +1,10 @@
 {
   "model": "z-ai/glm-4.7",
+  "theme": "dark",
+  "autoUpdatesChannel": "latest",
   "statusLine": {
     "type": "command",
-    "command": "~/Documents/Coding/.dotfiles/claude/statusline.sh"
+    "command": "~/.claude/statusline.sh"
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,

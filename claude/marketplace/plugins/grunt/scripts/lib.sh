@@ -36,6 +36,10 @@ GRUNT_DENY=(
   'Shell(shred)' 'Shell(sudo)' 'Shell(git push)' 'Shell(git reset)'
   'Shell(git clean)' 'Shell(git restore)' 'Shell(git checkout)'
   'Shell(find)' 'Shell(npm install -g)'
+  # cmd.exe equivalents. The worker's shell tool is cmd on Windows, where the
+  # rules above never match.
+  'Shell(del)' 'Shell(erase)' 'Shell(rd)' 'Shell(ren)' 'Shell(rename)'
+  'Shell(move)'
 )
 
 # Paths the worker may write outside its worktree. The session temp dir is where

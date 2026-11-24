@@ -214,3 +214,4 @@ export PATH="$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH"
 alias music-tags='~/Coding/music-tags/music_tags.py'
 alias dp='dphoto'
 alias chat='/Users/natios/Coding/test/ollama-chat/run.sh'
+alias cmd='cmdc'
