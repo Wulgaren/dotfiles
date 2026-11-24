@@ -1,22 +1,26 @@
-# Claude Code OpenRouter Statusline
+# Claude Code statusline
 
-Tracks your OpenRouter API costs in the Claude Code statusline.
+Shows the working directory, git branch, model, and claude.ai rate-limit usage.
+
+```
+~/Coding/project (main) | Opus | 5h 12% (resets 15:30) | 7d 40% (resets Mon 09:00)
+```
+
+`statusline.sh` reads the JSON Claude Code sends on stdin. The branch is looked
+up with `git` (it is not in the JSON), and the rate-limit segments are omitted
+when the fields are absent (non-subscription, or before the first API response).
 
 ## Setup
 
-1. Make the script executable:
-   ```bash
-   chmod +x statusline.sh
-   ```
+`~/.claude/settings.json`:
 
-2. Add to `~/.claude/settings.json`:
-   ```json
-   {
-     "statusLine": {
-       "type": "command",
-       "command": "/path/to/statusline.sh"
-     }
-   }
-   ```
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  }
+}
+```
 
-The script uses your existing `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` from Claude Code's config.
+Requires `jq` and `git` on `PATH`.

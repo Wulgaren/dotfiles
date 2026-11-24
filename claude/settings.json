@@ -1,14 +1,47 @@
 {
-  "model": "z-ai/glm-4.7",
-  "theme": "dark",
-  "autoUpdatesChannel": "latest",
+  "env": {
+    "GRUNT_MIN_LINES": "1000"
+  },
+  "model": "opus",
+  "theme": "auto",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true
+    "grunt@natios": true,
+    "vercel@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "natios": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/natios/.claude/local-marketplace"
+      }
+    }
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high",
+      "autoCompactWindow": 220000
+    },
+    "claude-sonnet-5-5": {
+      "effortLevel": "high"
+    }
+  },
+  "awaySummaryEnabled": false,
+  "autoMemoryEnabled": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -c 'rex __internal session-start --agent claude 2>/dev/null || true'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

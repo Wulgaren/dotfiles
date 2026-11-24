@@ -55,10 +55,6 @@ link commandcode/settings.json ~/.commandcode/settings.json
 # claude code
 link claude/settings.json ~/.claude/settings.json
 link claude/statusline.sh ~/.claude/statusline.sh
-link claude/statusline.ts ~/.claude/statusline.ts
-
-# scripts -> PATH
-linkeach scripts ~/.local/bin
 
 # mac app support
 link discordo mac:~/Library/Application Support/discordo
