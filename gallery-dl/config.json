@@ -1,6 +1,6 @@
 {
     "extractor": {
-        "cookies": ["safari"],
+        "cookies": ["helium"],
         "base-directory": "~/Downloads",
         "directory": [],
         "skip": "true",
