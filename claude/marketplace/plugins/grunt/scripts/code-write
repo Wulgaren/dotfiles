@@ -17,7 +17,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 # Dependency folders linked from the main tree so checks run in the worktree.
 # Each is added to info/exclude, so git status and commits skip it.
-LINKED_DIRS=(node_modules .venv)
+LINKED_DIRS=(node_modules .venv venv)
+
+# A task gets one review and one more after new commits. The counter lives in
+# the worktree's git dir (state_file), so the limit holds across shell invocations and cannot be
+# dodged by rerunning the command.
+REVIEW_LIMIT=2
 
 usage() {
   cat >&2 <<EOF
@@ -264,6 +269,20 @@ review() {
   # reviewers see them in the diff.
   has_changes && commit_all "orchestrator edits"
 
+  # Stop the loop where the skill says to. Without this, re-running `review`
+  # re-sends the same diff to a frontier model until it finally says clean.
+  local reviewed last head
+  reviewed="$(cat "$(state_file reviews)" 2>/dev/null || printf '0')"
+  reviewed="${reviewed:-0}"
+  last="$(cat "$(state_file reviewed-at)" 2>/dev/null || true)"
+  head="$(git -C "$worktree" rev-parse HEAD)"
+  if (( reviewed >= REVIEW_LIMIT )); then
+    die "'$task' has had $reviewed reviews, which is the limit. Fix small findings yourself, then run: code-write finish $task"
+  fi
+  if (( reviewed > 0 )) && [[ "$head" == "$last" ]]; then
+    die "nothing changed since the last review of '$task'. Run a step with --continue, fix it yourself, or run: code-write finish $task"
+  fi
+
   # The reviewers see the whole series at once, so they can judge the task
   # rather than each step in isolation. Neither has an access flag, so they
   # read files but cannot edit or commit.
@@ -331,7 +350,11 @@ End with exactly one line, either VERDICT: clean or VERDICT: changes-needed."
   grunt_log "review" "$task" "$(printf '%s' "$diff" | wc -l | tr -d ' ')" "${#diff}"
 
   case "$reviewer_verdict" in
-    "VERDICT: clean"|"VERDICT: changes-needed") ;;
+    "VERDICT: clean"|"VERDICT: changes-needed")
+      # Only a review that produced a verdict counts against the limit.
+      printf '%s\n' "$(( reviewed + 1 ))" > "$(state_file reviews)"
+      printf '%s\n' "$head" > "$(state_file reviewed-at)"
+      ;;
     *)
       printf '\nreview: %s gave no verdict line. Treat the task as unreviewed and rerun.\n' "$reviewer_label" >&2
       exit 1

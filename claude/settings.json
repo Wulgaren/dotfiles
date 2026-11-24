@@ -1,6 +1,6 @@
 {
   "env": {
-    "GRUNT_MIN_LINES": "1000"
+    "GRUNT_MIN_LINES": "350"
   },
   "model": "opus",
   "theme": "auto",

@@ -39,13 +39,12 @@ link yt-dlp ~/.config/yt-dlp
 
 # cursor / agents / codex
 link .cursor/rules ~/.cursor/rules
-link .cursor/skills ~/.cursor/skills
-link .cursor/skills ~/.agents/skills
+link .agents/skills ~/.agents/skills
 link .cursor/hooks.json ~/.cursor/hooks.json
 link .cursor/hooks ~/.cursor/hooks
 link AGENT.md ~/.agents/AGENT.md
 link AGENT.md ~/.codex/AGENTS.md
-linkeach .cursor/skills ~/.claude/skills
+linkeach .agents/skills ~/.claude/skills
 link AGENT.md ~/.claude/CLAUDE.md
 link claude/marketplace ~/.claude/local-marketplace
 

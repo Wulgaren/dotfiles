@@ -1,6 +1,6 @@
 ---
 name: bulk-reader
-description: Read many large files and answer one question about them without loading the files into your context. Use when a read is blocked by the grunt hook, or when answering a question requires reading files over roughly 1000 lines. Not for editing, debugging, or design decisions.
+description: Read many large files and answer one question about them without loading the files into your context. Use when a read is blocked by the grunt guard, or when answering a question requires reading files over roughly 350 lines. Not for editing, debugging, or design decisions.
 ---
 
 # bulk-reader

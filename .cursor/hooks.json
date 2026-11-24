@@ -1,12 +1,6 @@
 {
   "version": 1,
   "hooks": {
-    "preToolUse": [
-      {
-        "command": "./hooks/grunt-guard-read",
-        "matcher": "Read|Shell"
-      }
-    ],
     "afterFileEdit": [
       {
         "command": "node ./hooks/verify-handoff.mjs"

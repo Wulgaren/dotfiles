@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
-# PreToolUse guard for reads. Two rules:
+# PreToolUse guard for reads. Three rules:
 #
 # 1. Whole-file reads over GRUNT_MIN_LINES (default 1000) are denied and pointed
 #    at the bulk-reader skill. Same rule for the Read tool and a bare
 #    "cat/head/tail <file>" command.
-# 2. Read-shaped shell output over GRUNT_MAX_BYTES (default 6000) is capped:
-#    the command still runs once, its stdout is captured, and only the first
-#    GRUNT_MAX_BYTES reach the model with a marker that says it was cut. This
-#    covers ranges ("sed -n 100,260p f") and chained commands, which the deny
-#    rule cannot see.
+# 2. Generated or vendored files are denied with a "use rg" message.
+# 3. Output that would flood the context is capped at GRUNT_MAX_BYTES (default
+#    6000): the command runs once, only the first bytes reach the model, and the
+#    full output stays in a file the marker names.
+#
+# The cap covers read-shaped commands and commands that pour out text. A
+# read-shaped command is allowed without a permission prompt; any other capped
+# command keeps the normal permission flow, so a rewrite never widens what runs
+# unprompted. Commands that stream indefinitely are left alone.
 #
 # Exits 2 to deny the tool call; stderr becomes the reason the agent sees.
-# Prints updatedInput JSON to allow the call with a capped command.
+# Prints updatedInput JSON to allow or rewrite the call.
 # Any internal failure exits 0 (allow). A broken guard must not stop all work.
 #
-# Speaks Claude Code's hook protocol. Cursor's Shell tool is treated as Bash;
-# .cursor/hooks/grunt-guard-read adapts the response for Cursor's preToolUse.
+# Speaks Claude Code's hook protocol.
 
 set -uo pipefail
 
@@ -29,6 +32,12 @@ LOG="${GRUNT_LOG:-$HOME/.claude/grunt.log}"
 input="$(cat)"
 tool="$(jq -r '.tool_name // empty' <<<"$input" 2>/dev/null)" || exit 0
 [[ -z "$tool" ]] && exit 0
+
+# Capped output is kept here so the model can read the rest of it. Claude Code
+# passes a per-session scratchpad; anything else falls back to the temp dir.
+OUT_DIR="$(jq -r '.scratchpad_dir // empty' <<<"$input" 2>/dev/null)"
+OUT_DIR="${OUT_DIR:-${TMPDIR:-/tmp}}"
+[[ -d "$OUT_DIR" ]] || OUT_DIR="${TMPDIR:-/tmp}"
 
 # Generated or vendored files: never worth a whole read.
 skip_reason() {
@@ -63,9 +72,9 @@ file_size() {
 }
 
 log_decision() {
-  local mode="$1" path="$2" lines="$3" bytes="$4"
+  local mode="$1" detail="$2" lines="$3" bytes="$4"
   printf '%s\t%s\t%s\t%s\t%s\n' \
-    "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "$path" "$lines" "$bytes" >> "$LOG" 2>/dev/null
+    "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "$detail" "$lines" "$bytes" >> "$LOG" 2>/dev/null
 }
 
 deny() {
@@ -104,111 +113,96 @@ Rules:
 - Keep debugging, design decisions, and safety-critical code in the main model."
 }
 
-# Bytes per line of a readable file, or empty when the file cannot be read.
-bytes_per_line() {
-  local f="$1" lines bytes
-  [[ -f "$f" ]] || return 0
-  lines="$(line_count "$f")"
-  bytes="$(file_size "$f")"
-  [[ -z "$lines" || -z "$bytes" ]] && return 0
-  (( lines < 1 )) && lines=1
-  printf '%s\n' "$(( (bytes + lines - 1) / lines ))"
-}
-
-# Lines a "sed -n A,Bp" segment asks for, or empty when it has no range.
-sed_lines() {
-  local seg="$1"
-  if [[ "$seg" =~ -n[[:space:]]*[\"\']?([0-9]+),([0-9]+)p ]]; then
-    printf '%s\n' "$(( BASH_REMATCH[2] - BASH_REMATCH[1] + 1 ))"
-  fi
-}
-
-# Lines a "head/tail" segment asks for: -n N, -N, or the 10-line default.
-head_lines() {
-  local seg="$1"
-  if [[ "$seg" =~ (^|[[:space:]])-n[[:space:]]*([0-9]+) ]]; then
-    printf '%s\n' "${BASH_REMATCH[2]}"
-  elif [[ "$seg" =~ (^|[[:space:]])-([0-9]+)([[:space:]]|$) ]]; then
-    printf '%s\n' "${BASH_REMATCH[2]}"
-  else
-    printf '10\n'
-  fi
-}
-
-# Last non-flag word of a segment: the file the command reads.
-segment_file() {
-  local w words=() file_hint="" seg="$1"
-  read -r -a words <<< "$seg"
-  for w in "${words[@]:1}"; do
-    [[ "$w" == -* ]] && continue
-    [[ "$w" =~ ^[0-9]+$ ]] && continue
-    file_hint="$w"
-  done
-  printf '%s\n' "${file_hint:-}"
-}
-
-# Estimated stdout of the read-shaped commands in a shell string, as
-# "<lines> <bytes>". Chained segments are summed because their stdout is
-# concatenated. Over-estimating is cheap: the cap wrapper is transparent for
-# small output, so this only decides whether to wrap.
-estimate_reads() {
-  local cmd="$1" segments seg word file lines bpl
-  local total_lines=0 total_bytes=0
-  segments="$(printf '%s' "$cmd" | sed -E 's/(&&|\|\||;)/\n/g')"
-
+# The command's segments, one per line, trimmed and without leading NAME=value
+# assignments, so "FOO=1 git diff" is judged as git. A misread only changes
+# whether the cap applies, never the command itself.
+segments_of() {
+  local seg
   while IFS= read -r seg; do
     seg="${seg#"${seg%%[![:space:]]*}"}"
-    word="${seg%%[[:space:]]*}"
-    file="$(segment_file "$seg")"
-    bpl="$(bytes_per_line "$file")"
-
-    case "$word" in
-      sed)
-        lines="$(sed_lines "$seg")"
-        [[ -z "$lines" ]] && continue
-        # No readable file: assume a wide line rather than skipping the range.
-        [[ -z "$bpl" ]] && bpl=90
-        ;;
-      cat|head|tail)
-        [[ -z "$bpl" ]] && continue
-        if [[ "$word" == cat ]]; then
-          lines="$(line_count "$file")"
-        else
-          lines="$(head_lines "$seg")"
-        fi
-        [[ -z "$lines" ]] && continue
-        ;;
-      *)
-        continue ;;
-    esac
-
-    total_lines=$(( total_lines + lines ))
-    total_bytes=$(( total_bytes + lines * bpl ))
-  done <<< "$segments"
-
-  printf '%s %s\n' "$total_lines" "$total_bytes"
+    while [[ "$seg" =~ ^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+(.*)$ ]]; do
+      seg="${BASH_REMATCH[1]}"
+    done
+    [[ -n "$seg" ]] && printf '%s\n' "$seg"
+  done <<< "$(printf '%s' "$1" | sed -E 's/(&&|\|\||;|\|)/\n/g')"
 }
 
-# Allows the call with the command wrapped so stdout is capped at MAX_BYTES.
-# stderr is untouched, and the original exit status is preserved.
+# A command whose only output is file contents, so allowing it without a prompt
+# is safe. Redirects, substitutions, background jobs and the writing variants of
+# the same tools are excluded.
+read_shaped() {
+  local cmd="${1//2>\/dev\/null/}" seg word
+  local writes_file='>([^&]|$)' lone_amp='(^|[^&>])&([^&>]|$)'
+  local sed_in_place='(^|[[:space:]])-[A-Za-z]*i|--in-place'
+  [[ "$cmd" == *'`'* || "$cmd" == *'$('* || "$cmd" == *'<('* ]] && return 1
+  [[ "$cmd" =~ $writes_file || "$cmd" =~ $lone_amp ]] && return 1
+  while IFS= read -r seg; do
+    word="${seg%%[[:space:]]*}"
+    case "$word" in
+      sed)  [[ "$seg" =~ $sed_in_place ]] && return 1 ;;
+      sort) [[ "$seg" == *" -o"* || "$seg" == *"--output"* ]] && return 1 ;;
+      rg)   [[ "$seg" == *"--pre"* ]] && return 1 ;;
+      cat|head|tail|cut|uniq|nl|tac|wc|grep|rg|sed|sort) ;;
+      *) return 1 ;;
+    esac
+  done <<< "$(segments_of "$cmd")"
+  return 0
+}
+
+# Commands that pour out text. Their stdout is capped; stderr and the exit code
+# pass through.
+noisy() {
+  local cmd="$1" seg word
+  while IFS= read -r seg; do
+    word="${seg%%[[:space:]]*}"
+    case "$word" in
+      rg|grep|find|ls|tree|git|npm|npx|pnpm|yarn|bun|bunx|cargo|go|make|pytest|jest|vitest|tsc|eslint|ruff|mypy|docker|kubectl|journalctl)
+        return 0 ;;
+    esac
+  done <<< "$(segments_of "$cmd")"
+  return 1
+}
+
+# Commands that never finish on their own must stream, so buffering them would
+# hang the call.
+streams_output() {
+  local cmd="$1"
+  case "$cmd" in
+    *'tail -f'*|*'tail -F'*|*'--follow'*|*'--watch'*|*'journalctl -f'*|*' -it '*|*'run dev'*|*'next dev'*|*' serve '*|*'yes '*|*'watch '*)
+      return 0 ;;
+  esac
+  [[ "$cmd" =~ (^|[[:space:]])vite([[:space:]]|$) || "$cmd" =~ [[:space:]]\&[[:space:]]*$ ]]
+}
+
+# Wraps the command so stdout is capped at MAX_BYTES. The full output stays on
+# disk and the marker names it; stderr and the exit status pass through
+# untouched. The allow mode skips the permission prompt, so only read-shaped
+# commands use it.
 cap_command() {
-  local cmd="$1" wrapped reason
-  wrapped="__grunt_out=\$(mktemp)
+  local cmd="$1" mode="$2" wrapped reason
+  wrapped="__grunt_out=\$(mktemp \"$OUT_DIR/grunt-out.XXXXXX\")
 { $cmd
 } >\"\$__grunt_out\"
 __grunt_rc=\$?
 __grunt_size=\$(wc -c <\"\$__grunt_out\" | tr -d ' ')
 head -c $MAX_BYTES \"\$__grunt_out\"
 if [ \"\$__grunt_size\" -gt $MAX_BYTES ]; then
-  printf '\\n[grunt: stdout cut at $MAX_BYTES of %s bytes, the rest is gone.\\n' \"\$__grunt_size\"
-  printf 'For more: rerun the exact range (e.g. sed -n 61,140p <file>) or ask a worker: %s/scripts/bulk-read --question \"<question>\" --paths <files>. GRUNT_OFF=1 disables this.]\\n' \"$ROOT\"
+  printf '\\n[grunt: stdout cut at $MAX_BYTES of %s bytes.\\n' \"\$__grunt_size\"
+  printf 'Full output: %s. Read a range of it with offset/limit, or grep it. Prefix the command with GRUNT_OFF=1 to skip the cap.]\\n' \"\$__grunt_out\"
 fi
-rm -f \"\$__grunt_out\"
 exit \$__grunt_rc"
 
-  reason="stdout above $MAX_BYTES bytes: capped, the command output is cut and marked"
-  jq -nc --arg cmd "$wrapped" --arg reason "$reason" \
-    '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: $reason, updatedInput: {command: $cmd}}}'
+  reason="stdout above $MAX_BYTES bytes: capped, the full output is kept on disk"
+  if [[ "$mode" == allow ]]; then
+    jq -nc --arg cmd "$wrapped" --arg reason "$reason" \
+      '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: $reason, updatedInput: {command: $cmd}}}'
+  else
+    # No decision, so the normal permission flow still applies to the rewritten
+    # command. A cap must not approve a command the user would otherwise be asked
+    # about.
+    jq -nc --arg cmd "$wrapped" \
+      '{hookSpecificOutput: {hookEventName: "PreToolUse", updatedInput: {command: $cmd}}}'
+  fi
   exit 0
 }
 
@@ -221,15 +215,21 @@ case "$tool" in
     [[ -n "$offset" || -n "$limit" ]] && exit 0
     check_file "$file"
     ;;
-  Bash|Shell)
+  Bash)
     cmd="$(jq -r '.tool_input.command // empty' <<<"$input")"
     [[ -z "$cmd" ]] && exit 0
 
+    # The opt-out the cap marker names. The hook's own env is not the command's,
+    # so the prefix has to be read from the command text.
+    [[ "$cmd" =~ (^|[;\&|[:space:]])GRUNT_OFF=1[[:space:]] ]] && exit 0
+
     # A bare whole-file read gets the Read-tool rule, so the file stays out of
-    # context entirely instead of arriving cut in half.
-    if [[ "$cmd" != *"|"* && "$cmd" != *">"* && "$cmd" != *"<"* && "$cmd" != *";"* && "$cmd" != *'$('* ]]; then
-      if [[ "$cmd" =~ ^[[:space:]]*(cat|head|tail|less|more)[[:space:]] ]]; then
-        read -r -a words <<< "$cmd"
+    # context entirely instead of arriving cut in half. Leading assignments are
+    # stripped first, or FOO=1 cat big would slip past the size rule.
+    bare="$(segments_of "$cmd")"
+    if [[ "$bare" != *"|"* && "$bare" != *">"* && "$bare" != *"<"* && "$bare" != *";"* && "$bare" != *'$('* ]]; then
+      if [[ "$bare" =~ ^[[:space:]]*(cat|head|tail|less|more)[[:space:]] ]]; then
+        read -r -a words <<< "$bare"
         args=()
         for w in "${words[@]:1}"; do
           [[ "$w" == -* ]] && continue
@@ -239,13 +239,22 @@ case "$tool" in
       fi
     fi
 
-    # Everything else that reads: cap the output. Re-wrapping our own command
-    # would nest temp files and markers for no gain.
+    # Everything else that reads or dumps: cap the output. Re-wrapping our own
+    # command would nest temp files and markers for no gain, and a command that
+    # streams must run unbuffered.
     [[ "$cmd" == *"__grunt_out"* ]] && exit 0
-    read -r est_lines est_bytes <<< "$(estimate_reads "$cmd")"
-    if (( ${est_lines:-0} > 0 && ${est_bytes:-0} > MAX_BYTES )); then
-      log_decision "capped-read" "$(printf '%s' "$cmd" | head -c 80)" "$est_lines" "$est_bytes"
-      cap_command "$cmd"
+    streams_output "$cmd" && exit 0
+    # A background job's output file must fill as it runs, and the cap buffers
+    # stdout until the command exits.
+    [[ "$(jq -r '.tool_input.run_in_background // false' <<<"$input")" == true ]] && exit 0
+    detail="$(printf '%s' "$cmd" | head -c 80)"
+
+    if read_shaped "$cmd"; then
+      log_decision "capped-read" "$detail" "" ""
+      cap_command "$cmd" allow
+    elif noisy "$cmd"; then
+      log_decision "capped-output" "$detail" "" ""
+      cap_command "$cmd" plain
     fi
     ;;
 esac

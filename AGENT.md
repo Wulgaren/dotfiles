@@ -45,9 +45,18 @@ The ledger closes when every line reads met, not met, or changed. A line that ne
   - `unslop` on every message, including intermediate ones, not just the final answer. Run its checklist before you send each message. Matching the surrounding style does not count, and a dense house style does not override it.
   - `cleanup` after code edits, before handoff.
   - `tdd` before behaviour changes.
-  - `code-writer` for every step that writes new code, including the fix that ends a debugging session. Diagnosis, probe edits and throwaway repro scripts stay with you; the fix goes to the worker, even when it is a few lines. Dual Cursor+Sol review is gated by that skill (skip for presentation/CSS/copy/config when checks passed and you already read the full task diff); `finish` does not require `review: clean`.
+  - `code-writer` for every step that writes new code, including the fix that ends a debugging session. Diagnosis, probe edits and throwaway repro scripts stay with you; the fix goes to the worker, even when it is a few lines. The Sol review is gated by that skill (skip for presentation/CSS/copy/config when checks passed and you already read the full task diff); `finish` does not require `review: clean`.
   - The `principle-*` skills when debugging, under context pressure, refactoring, or sequencing an addition.
 - If you wrote prose without a `unslop` call this turn, stop, load the skill, and rewrite it before sending.
+
+## Output
+
+Output tokens cost more than input ones, and most of them go into tool arguments rather than prose.
+
+- Reply in the fewest lines that answer, with no preamble and no restating of the request.
+- Cite path:line. Keep file contents out of the reply.
+- Edit the smallest region; Write only for a new file or a full replacement.
+- Paste command output only for the lines that decide the next step.
 
 ## TypeScript: no `any`
 
@@ -152,11 +161,11 @@ Workflow and tooling notes that transfer across projects. Project-specific bug f
 
 ---
 
-## 7. Grunt dual review tax on small CSS/layout
+## 7. Grunt review tax on small CSS/layout
 
-**Struggle:** A few dozen lines of CSS or layout through `code-write` still burns 10+ minutes because every finish path ran Cursor+Sol on the full series, `changes-needed` said "review again", and abort left an in-flight review running against a deleted worktree.
+**Struggle:** A few dozen lines of CSS or layout through `code-write` still burns 10+ minutes because every finish path ran a frontier review on the full series, `changes-needed` said "review again", and abort left an in-flight review running against a deleted worktree.
 
-**Resolution:** Follow the code-writer review gate: skip dual review for presentation/CSS/copy/config when checks passed and the planner already read the diff. Planner self-fixes go straight to `finish`. Re-run dual review only after a worker `--continue`, at most once more per task. `code-write abort` kills the recorded review PID first.
+**Resolution:** Follow the code-writer review gate: skip the review for presentation/CSS/copy/config when checks passed and the planner already read the diff. Planner self-fixes go straight to `finish`. Re-run the review only after a worker `--continue`, at most once more per task. `code-write abort` kills the recorded review PID first.
 
 ---
 

@@ -5,19 +5,15 @@ Routes the expensive, low-thinking parts of Claude Code work to a cheap worker m
 Two paths:
 
 - **bulk-reader** sends files to the worker and returns a bullet answer. The files never enter the main model's context.
-- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Each step is gated on its check. When the series is done, Claude reads the whole task diff. One review pass (GPT-6.2 Sol through `codex`) runs only when the skill says the task is review-worthy: behaviour/API/data risk, multi-file structure, weak checks, or a planner-requested second opinion. When Sol is missing, signed out, or out of credits, the same review runs on Command Code's `deepseek/deepseek-v4.1-flash` at high effort. Presentation/CSS/copy/config that already passed its check skips the review after the planner's own diff read. Planner self-fixes then finish without a second review; a worker continue gets at most one more. `abort` kills an in-flight review. `finish` applies the task to the working tree as uncommitted edits.
+- **code-writer** makes Claude the planner and reviewer. Claude writes a spec for each step. The worker runs as an agent in a git worktree, edits files, and loops on a check command. Each step is gated on its check. When the series is done, Claude reads the whole task diff. One review pass (GPT-6.2 Sol through `codex`) runs only when the skill says the task is review-worthy: behaviour/API/data risk, multi-file structure, weak checks, or a planner-requested second opinion. When Sol is missing, signed out, or out of credits, the same review runs on Command Code's `deepseek/deepseek-v4.1-flash` at high effort. Presentation/CSS/copy/config that already passed its check skips the review after the planner's own diff read. Planner self-fixes then finish without a second review; a worker continue gets at most one more. The script enforces that: a third `review` for a task is refused, and so is a repeat with no new commits since the last one. `abort` kills an in-flight review. `finish` applies the task to the working tree as uncommitted edits.
 
-The read guard works in Claude Code, Cursor, and OpenCode. `guard-read` owns the read rules; only the hook wiring differs.
-
-| Agent | Skills | Guard |
-|---|---|---|
-| Claude Code | plugin `skills/` | plugin `hooks/hooks.json` |
-| Cursor | `~/.cursor/skills` (dotfiles fan-out) | `.cursor/hooks/grunt-guard-read` via `preToolUse` |
-| OpenCode | `~/.claude/skills` and `~/.agents/skills` | `opencode/plugins/grunt/index.ts` |
+The read guard runs in Claude Code. The plugin's `hooks/hooks.json` wires `guard-read` into `PreToolUse`, and its `skills/` carries bulk-reader and code-writer. `link.sh` fans those skills out to `~/.agents/skills`, so Command Code loads them too.
 
 A `PreToolUse` hook routes reads two ways. Whole-file reads over `GRUNT_MIN_LINES` (default 1000) are blocked with a pointer to the skill, and generated files (lockfiles, minified assets, `node_modules`, `dist`) are blocked with a "use rg" message. Targeted reads (`offset`/`limit`) pass through.
 
-Shell reads that the block rule cannot see, such as `sed -n 100,260p f` or `cat a; sed -n 1,140p b`, are capped at `GRUNT_MAX_BYTES` (default 6000). The hook rewrites the command so it still runs once, keeps the first 6000 bytes of stdout, and appends a marker with the full size plus the two ways to get the rest: an exact range or a bulk-read question. stderr and the exit code pass through unchanged. The rewrite returns `permissionDecision: allow`, so a capped command does not go through the permission prompt.
+Shell output is capped at `GRUNT_MAX_BYTES` (default 6000). The hook rewrites the command so it still runs once, keeps the first 6000 bytes of stdout, saves the full output in the session scratchpad, and appends a marker with the full size and the file path. stderr and the exit code pass through unchanged. It covers read-shaped commands (`sed -n 100,260p f`, `cat a; head -n 40 b`) and commands that dump text (`rg`, `find`, `git`, tests, logs, `npm`). Read-shaped commands come back with `permissionDecision: allow`; every other capped command is only rewritten, so the normal permission flow still applies. Commands that stream indefinitely (`tail -f`, `--watch`, background jobs) are left alone.
+
+Leading `NAME=value` assignments are stripped before a command is classified, so `FOO=1 git diff` is capped like `git diff`. Two forms still slip past: a quoted assignment with a space (`FOO='a b' git diff`) and an `env` prefix (`env FOO=1 git diff`).
 
 ## Install
 
@@ -30,7 +26,7 @@ The marketplace lives in this dotfiles repo under `claude/marketplace` and is li
 
 The worker needs the `command-code` CLI on `PATH`, signed in with `command-code login`. The Sol review needs the `codex` CLI on `PATH`, signed in to an account that can reach `GRUNT_REVIEW_MODEL`.
 
-Cursor and OpenCode need no install step. The plugin skills are linked into `.cursor/skills`, `link.sh sync` fans them out to the agent config directories, and OpenCode discovers `opencode/plugins/grunt` from the linked config directory.
+The plugin skills are symlinked into `.agents/skills` and fanned out to `~/.agents/skills` by `link.sh sync`, so Command Code reads the same two skills.
 
 ## Config
 
@@ -39,13 +35,13 @@ Set in `~/.claude/settings.json` under `env`:
 | Var | Default | Meaning |
 |---|---|---|
 | `GRUNT_MIN_LINES` | `1000` | Block reads above this line count |
-| `GRUNT_MAX_BYTES` | `6000` | Cap on shell read stdout; the command runs once and the cut is marked |
+| `GRUNT_MAX_BYTES` | `6000` | Cap on capped command stdout; the full output stays on disk and the cut is marked |
 | `GRUNT_MODEL` | unset | bulk-read model; unset uses your configured `command-code` model |
 | `GRUNT_CODER_MODEL` | `deepseek/deepseek-v4.1-flash-fast` | code-write model |
 | `GRUNT_REVIEW_MODEL` | `gpt-6.2-sol` | Sol's codex model |
 | `GRUNT_FALLBACK_MODEL` | `deepseek/deepseek-v4.1-flash` | review model when Sol fails, run at high effort |
 | `GRUNT_SANDBOX` | `1` | macOS OS sandbox fencing worker writes to the worktree |
-| `GRUNT_OFF` | unset | `1` disables the read guard |
+| `GRUNT_OFF` | unset | `1` in the environment disables the read guard; prefixing a command with `GRUNT_OFF=1` skips the cap for that call |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
 `GRUNT_MODEL` and `GRUNT_CODER_MODEL` are `command-code --list-models` names. An unset `GRUNT_MODEL` uses your configured `command-code` model. `GRUNT_REVIEW_MODEL` is a codex CLI model name.
@@ -73,7 +69,7 @@ timestamp  mode  detail  lines  bytes  tokens_avoided  seconds  worker_in  worke
 
 `tokens_avoided` is `bytes / 4`, a rough stand-in for what the main model would have read.
 
-Guard rows stop after `bytes`: `blocked-bulk` and `blocked-generated` from the whole-file rule, `capped-read` from the shell cap. For `capped-read`, `lines` and `bytes` are the estimate from the command, not the truncated output.
+Guard rows stop after `detail`: `blocked-bulk` and `blocked-generated` from the whole-file rule, `capped-read` and `capped-output` from the cap. Both cap modes leave `lines`, `bytes` and `tokens_avoided` empty, because the cap keeps the output instead of estimating it.
 
 ## Limits
 
