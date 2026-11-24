@@ -16,7 +16,7 @@
     "natios": {
       "source": {
         "source": "directory",
-        "path": "/Users/natios/.claude/local-marketplace"
+        "path": "~/.claude/local-marketplace"
       }
     }
   },

@@ -41,7 +41,7 @@ OUT_DIR="${OUT_DIR:-${TMPDIR:-/tmp}}"
 
 # Generated or vendored files: never worth a whole read.
 skip_reason() {
-  local path="$1" base
+  local path="${1//\\//}" base
   base="$(basename "$path")"
   case "$base" in
     *.lock|*-lock.json|yarn.lock|pnpm-lock.yaml|go.sum|*.min.js|*.min.css|*.map|*.snap)
