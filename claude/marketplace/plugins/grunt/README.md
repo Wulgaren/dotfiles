@@ -41,13 +41,13 @@ Set in `~/.claude/settings.json` under `env`:
 | `GRUNT_MIN_LINES` | `1000` | Block reads above this line count |
 | `GRUNT_MAX_BYTES` | `6000` | Cap on shell read stdout; the command runs once and the cut is marked |
 | `GRUNT_MODEL` | unset | bulk-read model; unset uses your configured `command-code` model |
-| `GRUNT_CODER_MODEL` | unset | code-write model; unset uses your configured `command-code` model |
+| `GRUNT_CODER_MODEL` | `deepseek/deepseek-v4.1-flash-fast` | code-write model |
 | `GRUNT_REVIEW_MODEL` | `gpt-6.1-sol` | Sol's codex model |
 | `GRUNT_FALLBACK_MODEL` | `deepseek/deepseek-v4.1-flash` | review model when Sol fails, run at high effort |
 | `GRUNT_OFF` | unset | `1` disables the read guard |
 | `GRUNT_LOG` | `~/.claude/grunt.log` | Usage log |
 
-`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are `command-code --list-models` names. `GRUNT_REVIEW_MODEL` is a codex CLI model name.
+`GRUNT_MODEL` and `GRUNT_CODER_MODEL` are `command-code --list-models` names. An unset `GRUNT_MODEL` uses your configured `command-code` model. `GRUNT_REVIEW_MODEL` is a codex CLI model name.
 
 ## The editing worker's reach
 
