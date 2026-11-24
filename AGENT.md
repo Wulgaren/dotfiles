@@ -158,3 +158,11 @@ Workflow and tooling notes that transfer across projects. Project-specific bug f
 
 **Resolution:** Follow the code-writer review gate: skip dual review for presentation/CSS/copy/config when checks passed and the planner already read the diff. Planner self-fixes go straight to `finish`. Re-run dual review only after a worker `--continue`, at most once more per task. `code-write abort` kills the recorded review PID first.
 
+---
+
+## 8. Edit's read check is per path, so a worktree switch needs a re-read
+
+**Struggle:** The main checkout and the grunt worktree hold the same repo at different absolute paths (`D:\source\repos\<repo>` vs `~/.cache/grunt/<repo>-<task>`). Claude Code's Edit requires a Read of the exact path, so a read in one copy followed by an edit in the other fails with "File has not been read yet". Bash cwd also resets to the project directory after every call, so a `cd` from an earlier command is gone by the next one.
+
+**Resolution:** Read the file at the path you are about to edit, immediately before the edit. After `code-write start`, treat the worktree path as the working copy and read and edit through it. Pass the absolute path in each command, so the command does not depend on a `cd` from a previous call.
+
