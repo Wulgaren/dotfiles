@@ -30,6 +30,12 @@
   "awaySummaryEnabled": false,
   "autoMemoryEnabled": true,
   "disableClaudeAiConnectors": true,
+  "enableArtifact": false,
+  "permissions": {
+    "deny": [
+      "SendFeedback"
+    ]
+  },
   "skillOverrides": {
     "anthropic-skills:docs": "off",
     "anthropic-skills:docx": "off",
